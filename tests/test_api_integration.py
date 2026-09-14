@@ -1,0 +1,170 @@
+import unittest
+from unittest.mock import patch
+
+from fastapi.testclient import TestClient
+from sqlalchemy import text
+
+from backend.database import SessionLocal
+from backend.main import app
+
+
+class ApiIntegrationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        db = SessionLocal()
+        try:
+            db.execute(text("SELECT 1"))
+        except Exception as exc:
+            raise unittest.SkipTest(f"MySQL no disponible: {exc}")
+        finally:
+            db.close()
+        cls.client = TestClient(app)
+
+    def consultar_sin_ollama(self, consulta):
+        with patch(
+            "backend.main.analizar_consulta",
+            side_effect=AssertionError("Una consulta clara no debe usar Ollama"),
+        ):
+            return self.client.post("/api/consultar", json={"consulta": consulta})
+
+    def test_route_family_returns_all_variants(self):
+        respuesta = self.consultar_sin_ollama("Horario de la ruta 03")
+        self.assertEqual(respuesta.status_code, 200)
+        datos = respuesta.json()
+        self.assertEqual(datos["tipo"], "info")
+        self.assertEqual(
+            [ruta["codigo_ruta"] for ruta in datos["resultados"]],
+            ["R-03-1", "R-03-2"],
+        )
+
+    def test_exact_variant_returns_one_card(self):
+        datos = self.consultar_sin_ollama("Horario de la ruta 03-1").json()
+        self.assertEqual(len(datos["resultados"]), 1)
+        self.assertEqual(datos["resultados"][0]["codigo_ruta"], "R-03-1")
+
+    def test_routes_by_place_preserves_directions(self):
+        datos = self.consultar_sin_ollama("¿Qué rutas pasan por Shudal?").json()
+        self.assertEqual(datos["tipo"], "rutas_por_lugar")
+        sentidos = {
+            ruta["sentido"]
+            for ruta in datos["resultados"]
+            if ruta["codigo_ruta"] == "R-05"
+        }
+        self.assertEqual(sentidos, {"IDA", "VUELTA"})
+        self.assertTrue(all("nombre_comercial" in r for r in datos["resultados"]))
+
+    def test_direct_route(self):
+        datos = self.consultar_sin_ollama(
+            "Estoy en Shudal y quiero ir a Hoyos Rubio"
+        ).json()
+        self.assertEqual(datos["tipo"], "ruta")
+        self.assertGreaterEqual(len(datos["resultados"]), 1)
+
+    def test_informal_references_are_understood(self):
+        datos = self.consultar_sin_ollama(
+            "como voy de el milagro a los baños del inca"
+        ).json()
+        self.assertIn(datos["tipo"], {"ruta", "sin_resultados"})
+
+    def test_more_informal_references_are_understood(self):
+        consultas = [
+            "shuda shudal a hoyos rubio",
+            "estoy x manco capa y voy pa la chimba",
+        ]
+        for consulta in consultas:
+            with self.subTest(consulta=consulta):
+                datos = self.consultar_sin_ollama(consulta).json()
+                self.assertIn(datos["tipo"], {"ruta", "sin_resultados"})
+
+    def test_informal_routes_by_place(self):
+        datos = self.consultar_sin_ollama(
+            "q rutas pasan x hoyos rubios"
+        ).json()
+        self.assertEqual(datos["tipo"], "rutas_por_lugar")
+        self.assertGreaterEqual(len(datos["resultados"]), 1)
+
+    def test_destination_only_requests_origin(self):
+        datos = self.consultar_sin_ollama(
+            "Quiero ir a las pozas termales"
+        ).json()
+        self.assertEqual(datos["tipo"], "aclaracion")
+        self.assertEqual(datos["estado"], "Falta el origen")
+
+    def test_vague_trip_requests_both_places(self):
+        datos = self.consultar_sin_ollama("Quiero ir").json()
+        self.assertEqual(datos["tipo"], "aclaracion")
+        self.assertEqual(datos["estado"], "Datos incompletos")
+
+    def test_tariff_and_frequency_are_deterministic(self):
+        casos = [
+            ("cuanto cuesta la ruta 04", "TARIFA", "R-04"),
+            ("frecuencia de la ruta 05", "FRECUENCIA", "R-05"),
+        ]
+        for consulta, intencion, codigo in casos:
+            with self.subTest(consulta=consulta):
+                datos = self.consultar_sin_ollama(consulta).json()
+                self.assertEqual(datos["tipo"], "info")
+                self.assertEqual(datos["intencion_solicitada"], intencion)
+                self.assertEqual(datos["resultados"][0]["codigo_ruta"], codigo)
+
+    def test_numeric_explicit_route_code_is_accepted(self):
+        respuesta = self.client.post(
+            "/api/consultar",
+            json={
+                "consulta": "horario",
+                "intencion": "HORARIO",
+                "ruta_codigo": 5,
+            },
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.json()["resultados"][0]["codigo_ruta"], "R-05")
+
+    def test_next_unit_endpoint_uses_service_state(self):
+        respuesta = self.client.post(
+            "/api/proxima-unidad", json={"ruta_codigo": "R05"}
+        )
+        self.assertEqual(respuesta.status_code, 200)
+        datos = respuesta.json()
+        self.assertEqual(datos["codigo_ruta"], "R-05")
+        self.assertIn(
+            datos["estado_servicio"],
+            {
+                "ANTES_DE_INICIO",
+                "SERVICIO_ACTIVO",
+                "SERVICIO_FINALIZADO",
+                "SIN_MAS_SALIDAS",
+                "DATOS_INSUFICIENTES",
+            },
+        )
+
+    def test_unknown_free_text_degrades_without_ollama(self):
+        with patch("backend.main.analizar_consulta", side_effect=ConnectionError):
+            datos = self.client.post(
+                "/api/consultar", json={"consulta": "ando perdido compadre"}
+            ).json()
+        self.assertEqual(datos["tipo"], "aclaracion")
+
+    def test_ambiguous_place_lists_candidates(self):
+        datos = self.consultar_sin_ollama(
+            "¿Qué rutas pasan por Plaza de Armas?"
+        ).json()
+        self.assertEqual(datos["tipo"], "aclaracion")
+        self.assertGreaterEqual(len(datos["candidatos"]), 2)
+
+    def test_null_query_returns_validation_error(self):
+        respuesta = self.client.post("/api/consultar", json={"consulta": None})
+        self.assertEqual(respuesta.status_code, 422)
+
+    def test_non_object_body_returns_validation_error(self):
+        respuesta = self.client.post("/api/consultar", json=[])
+        self.assertEqual(respuesta.status_code, 422)
+
+    def test_health_reports_loaded_data(self):
+        datos = self.client.get("/api/health").json()
+        self.assertEqual(datos["status"], "ok")
+        self.assertGreater(datos["rutas"], 0)
+        self.assertIn(datos["ollama"], {"disponible", "no_disponible"})
+
+
+if __name__ == "__main__":
+    unittest.main()
