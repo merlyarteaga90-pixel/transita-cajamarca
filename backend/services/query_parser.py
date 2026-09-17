@@ -15,6 +15,10 @@ def _limpiar_lugar(texto: str | None) -> str | None:
     return texto or None
 
 
+def _prep_destino() -> str:
+    return r"(?:a|al|a\s+la|a\s+los|a\s+las|hacia|hasta|pa(?:ra)?)"
+
+
 def _extraer_codigo(texto: str) -> str | None:
     patron_ruta = re.search(
         r"\b(?:ruta|r)\s*[-:]?\s*(\d{1,2})"
@@ -56,6 +60,14 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
                 "ruta_codigo": _extraer_codigo(simple),
             }
 
+    if re.search(r"\bruta\s*\d{1,2}\b|\br\s*\d{1,2}\b", simple):
+        return {
+            "intencion": "PROXIMA_UNIDAD",
+            "origen": None,
+            "destino": None,
+            "ruta_codigo": _extraer_codigo(simple),
+        }
+
     por_lugar = re.search(
         r"\b(?:qu[eé]|q|cu[aá]les?)\s+rutas?\s+(?:pasan?|van)\s+(?:por|x)\s+(.+)$",
         original,
@@ -70,8 +82,8 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
         }
 
     patrones_viaje = [
-        r"\b(?:de|desde)\s+(.+?)\s+(?:a|hasta|hacia|pa(?:ra)?)\s+(.+)$",
-        r"\bestoy\s+(?:en|por|x)\s+(.+?)\s+y\s+(?:quiero\s+ir|voy|necesito\s+(?:ir|llegar))\s+(?:a|hacia|pa(?:ra)?)\s+(.+)$",
+        rf"\b(?:de|desde)\s+(.+?)\s+{_prep_destino()}\s+(.+)$",
+        rf"\bestoy\s+(?:en|por|x)\s+(.+?)\s+y\s+(?:quiero\s+ir|voy|necesito\s+(?:ir|llegar))\s+{_prep_destino()}\s+(.+)$",
     ]
     for patron in patrones_viaje:
         viaje = re.search(patron, original, re.IGNORECASE)
@@ -83,26 +95,43 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
                 "ruta_codigo": None,
             }
 
-    destino = re.search(
-        r"\b(?:quiero\s+ir|c[oó]mo\s+llego|necesito\s+(?:ir|llegar)|voy)\s+"
-        r"(?:a|hacia|pa(?:ra)?)\s+(.+)$",
-        original,
-        re.IGNORECASE,
-    )
-    if destino:
-        return {
-            "intencion": "BUSCAR_RUTA",
-            "origen": None,
-            "destino": _limpiar_lugar(destino.group(1)),
-            "ruta_codigo": None,
-        }
+    destino_sin_origen = [
+        rf"\brutas?\s+(?:para\s+)?(?:ir|llegar)\s+{_prep_destino()}\s+(.+)$",
+        rf"\b(?:qu[eé]|q|cu[aá]l)\s+(?:ruta|combi|micro|bus)\s+(?:me\s+)?(?:lleva|llevar[ií]a|va)\s+{_prep_destino()}\s+(.+)$",
+        rf"\b(?:quiero\s+ir|c[oó]mo\s+(?:voy|llego|puedo\s+llegar)|necesito\s+(?:ir|llegar)|voy)\s+{_prep_destino()}\s+(.+)$",
+    ]
+    for patron in destino_sin_origen:
+        destino = re.search(patron, original, re.IGNORECASE)
+        if destino:
+            return {
+                "intencion": "BUSCAR_RUTA",
+                "origen": None,
+                "destino": _limpiar_lugar(destino.group(1)),
+                "ruta_codigo": None,
+            }
 
     if re.fullmatch(r"(?:quiero ir|como llego|necesito ir|necesito llegar)[?.! ]*", simple):
         return {"intencion": "BUSCAR_RUTA", "origen": None, "destino": None, "ruta_codigo": None}
 
+    solo_origen = re.search(
+        r"\b(?:desde|de|salgo\s+de|parto\s+de|estoy\s+(?:en|por|x))\s+(.+)$",
+        original,
+        re.IGNORECASE,
+    )
+    if solo_origen:
+        return {
+            "intencion": "BUSCAR_RUTA",
+            "origen": _limpiar_lugar(solo_origen.group(1)),
+            "destino": None,
+            "ruta_codigo": None,
+        }
+
     # Forma corta frecuente: "shudal a hoyos rubio".
     corto = re.fullmatch(r"(.+?)\s+(?:a|hasta|hacia|pa(?:ra)?)\s+(.+)", original, re.IGNORECASE)
     if corto:
+        origen_corto = _sin_tildes(corto.group(1).lower())
+        if re.search(r"\b(?:ruta|rutas|combi|micro|bus|quiero|como|necesito|voy)\b", origen_corto):
+            return None
         return {
             "intencion": "BUSCAR_RUTA",
             "origen": _limpiar_lugar(corto.group(1)),

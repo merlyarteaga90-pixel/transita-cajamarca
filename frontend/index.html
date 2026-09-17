@@ -1,128 +1,20 @@
 <!doctype html>
 <html lang="es">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Asistente de Rutas - Cajamarca</title>
-    <link rel="icon" type="image/png" href="/static/assets/autobus.png" />
+    <link rel="icon" type="image/png" href="/static/assets/autobus.png?v=2" />
     <link rel="stylesheet" href="/static/style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet" />
-</head>
-
-<body>
-    <main class="contenedor">
-        <!-- Encabezado con estado en vivo -->
-        <header class="encabezado">
-            <div class="header-top">
-                <div class="logo-badge">
-                    <span class="logo-icono">🚌</span>
-                    <span class="logo-texto">Rutas</span>
-                </div>
-                <div class="status-pill">
-                    <span class="status-dot"></span>
-                    <span id="estadoServicioTexto">Verificando servicio...</span>
-                </div>
-            </div>
-            <div style="display: flex; flex-direction: row; gap: 16px; align-items: center;">
-                <img src="/static/assets/llama.png" alt="mascota de la web" width="40" height="40" />
-                <span>-</span>
-                <h1>Asistente de rutas de Transporte Público</h1>
-            </div>
-
-            <p>
-                Pregúntame sobre horarios, tiempos de espera o cómo llegar a tu
-                destino.
-            </p>
-        </header>
-
-        <!-- Buscador Interactivo -->
-        <section class="buscador">
-            <label for="consulta">¿En qué puedo ayudarte hoy?</label>
-            <div class="input-wrapper">
-                <textarea id="consulta" rows="2"
-                    placeholder="Ejemplo: ¿Cuánto falta para que pase la combi por Jr. Sucre? o ¿Cómo voy a Hoyos Rubio?"
-                    autofocus></textarea>
-                <button type="button" id="btnLimpiar" class="btn-limpiar" title="Borrar texto">
-                    ✕
-                </button>
-            </div>
-
-            <div class="buscador-acciones">
-                <button id="btnBuscar" type="button">
-                    <span>Preguntar</span>
-                    <svg class="icono-enviar" viewBox="0 0 24 24" width="16" height="16" fill="none"
-                        stroke="currentColor" stroke-width="2.5">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                </button>
-                <span class="tip-enter">Presiona <kbd>Enter ↵</kbd> para enviar</span>
-            </div>
-
-            <!-- Sugerencias de preguntas rápidas -->
-            <div class="ejemplos-contenedor">
-                <span class="ejemplos-titulo">Pruebas rápidas:</span>
-                <div class="ejemplos-chips">
-                    <button type="button" id="btnAbrirModalRutas" class="chip">
-                        🕐 Próxima combi
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Indicador de Carga Animado -->
-        <section id="cargando" class="cargando oculto">
-            <div class="spinner-ia"></div>
-            <div class="cargando-info">
-                <strong>Consultando itinerario...</strong>
-                <span>Consultando rutas y horarios...</span>
-            </div>
-        </section>
-
-        <!-- Mensaje de Error Amigable -->
-        <div id="error" class="error oculto"></div>
-
-        <!-- Tarjeta de Respuesta de la IA -->
-        <section id="resultado" class="resultado oculto">
-            <div class="resultado-header">
-                <div class="resultado-titulo">
-                    <span id="iconoEstado" class="icono-estado">🦙</span>
-                    <h3 id="estadoTexto">Respuesta del Asistente</h3>
-                </div>
-                <div class="resultado-herramientas">
-                    <button id="btnVoz" class="btn-tool" type="button" title="Escuchar respuesta">
-                        🔊 Escuchar
-                    </button>
-                    <button id="btnCopiar" class="btn-tool" type="button" title="Copiar texto">
-                        📋 Copiar
-                    </button>
-                </div>
-            </div>
-
-            <!-- Contenedor donde se dibuja la tarjeta de métricas y el texto fluido -->
-            <div id="respuesta" class="respuesta-cuerpo"></div>
-        </section>
-    </main>
-
-    <!-- Modal de selección de ruta -->
-    <div id="modalRutas" class="modal-overlay oculto">
-        <div class="modal-contenido">
-            <div class="modal-header">
-                <h3>🚌 Seleccionar Ruta</h3>
-                <button id="btnCerrarModalRutas" class="modal-cerrar" type="button" aria-label="Cerrar">✕</button>
-            </div>
-            <div class="modal-buscador">
-                <input type="text" id="modalRutasBuscador" placeholder="Buscar por código, empresa u origen..." />
-            </div>
-            <div id="modalRutasLista" class="modal-lista"></div>
-        </div>
-    </div>
-
-    <script src="/static/app.js"></script>
-</body>
-
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

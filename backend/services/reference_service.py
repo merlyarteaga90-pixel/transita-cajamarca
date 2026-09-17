@@ -219,6 +219,23 @@ def resolver_referencia(db, referencia: str):
     # 4. Coincidencias débiles: pedir aclaración
     # ----------------------------------------------------------
 
+    ubicaciones_unicas = {}
+    for c in candidatos:
+        clave = normalizar_referencia(c["ubicacion"])
+        ubicaciones_unicas.setdefault(clave, c["ubicacion"])
+
+    if len(ubicaciones_unicas) == 1:
+        clave, ubicacion = next(iter(ubicaciones_unicas.items()))
+        return {
+            "estado": "APROXIMADO",
+            "referencia": referencia,
+            "ubicaciones": [{
+                "oficial": ubicacion,
+                "normalizada": clave,
+            }],
+            "sugerencias": [],
+        }
+
     return {
         "estado": "AMBIGUO",
         "referencia": referencia,

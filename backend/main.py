@@ -40,8 +40,12 @@ from backend.services.schedule_service import calcular_proxima_unidad
 
 app = FastAPI(title="Asistente de Rutas de Cajamarca")
 RUTA_FRONTEND = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+RUTA_FRONTEND_DIST = os.path.join(RUTA_FRONTEND, "dist")
+RUTA_FRONTEND_DIST_ASSETS = os.path.join(RUTA_FRONTEND_DIST, "assets")
 if os.path.exists(RUTA_FRONTEND):
     app.mount("/static", StaticFiles(directory=RUTA_FRONTEND), name="static")
+if os.path.exists(RUTA_FRONTEND_DIST_ASSETS):
+    app.mount("/assets", StaticFiles(directory=RUTA_FRONTEND_DIST_ASSETS), name="assets")
 
 
 def get_db():
@@ -87,6 +91,52 @@ def _respuesta_ambigua(referencia: str, rol: str, resolucion: dict):
         f"'{referencia}' puede referirse a varios lugares. Escribe el nombre completo.",
         candidatos=candidatos,
     )
+
+
+def _rutas_por_ubicaciones(db, ubicaciones: list[dict]) -> list[dict]:
+    encontrados = []
+    for ubicacion in ubicaciones:
+        encontrados.extend(buscar_rutas_por_lugar(db, ubicacion["oficial"]))
+
+    unicos = {}
+    for ruta in encontrados:
+        clave = (ruta["ruta"], ruta["sentido"])
+        unicos.setdefault(clave, ruta)
+
+    return [
+        {"codigo_ruta": ruta["ruta"], **{k: v for k, v in ruta.items() if k != "ruta"}}
+        for ruta in unicos.values()
+    ]
+
+
+def _nombre_resuelto(referencia: str, resolucion: dict) -> str:
+    ubicaciones = resolucion.get("ubicaciones", [])
+    return ubicaciones[0]["oficial"] if len(ubicaciones) == 1 else referencia
+
+
+def _contexto_busqueda(origen=None, destino=None, pendiente=None):
+    contexto = {"intencion": "BUSCAR_RUTA"}
+    if origen:
+        contexto["origen"] = origen
+    if destino:
+        contexto["destino"] = destino
+    if pendiente:
+        contexto["pendiente"] = pendiente
+    return contexto
+
+
+def _aplicar_contexto(interpretacion: dict, contexto: dict | None) -> dict:
+    if not contexto or interpretacion.get("intencion") != "BUSCAR_RUTA":
+        return interpretacion
+    if contexto.get("intencion") != "BUSCAR_RUTA":
+        return interpretacion
+
+    pendiente = contexto.get("pendiente")
+    if pendiente == "origen" and not interpretacion.get("destino") and contexto.get("destino"):
+        interpretacion["destino"] = contexto["destino"]
+    if pendiente == "destino" and not interpretacion.get("origen") and contexto.get("origen"):
+        interpretacion["origen"] = contexto["origen"]
+    return interpretacion
 
 
 def _rutas_selector(db):
@@ -176,7 +226,9 @@ def _interpretar(consulta: str):
 
 @app.get("/")
 def inicio():
-    return FileResponse(os.path.join(RUTA_FRONTEND, "index.html"))
+    svelte_index = os.path.join(RUTA_FRONTEND_DIST, "index.html")
+    legacy_index = os.path.join(RUTA_FRONTEND, "index.html")
+    return FileResponse(svelte_index if os.path.exists(svelte_index) else legacy_index)
 
 
 @app.get("/api/health/db")
@@ -255,6 +307,7 @@ def consultar(datos: ConsultaRequest, db=Depends(get_db)):
             "aclaracion",
             "No pude identificar la consulta. Prueba indicando 'de [origen] a [destino]' o el código de la ruta.",
         )
+    interpretacion = _aplicar_contexto(interpretacion, datos.contexto)
 
     intencion = interpretacion.get("intencion")
     origen = interpretacion.get("origen")
@@ -287,23 +340,14 @@ def consultar(datos: ConsultaRequest, db=Depends(get_db)):
                 f"No reconocí el lugar '{destino}'. Prueba con otro nombre o una referencia cercana.",
             )
 
-        encontrados = []
-        for ubicacion in resolucion["ubicaciones"]:
-            encontrados.extend(buscar_rutas_por_lugar(db, ubicacion["oficial"]))
-
-        unicos = {}
-        for ruta in encontrados:
-            clave = (ruta["ruta"], ruta["sentido"])
-            unicos.setdefault(clave, ruta)
-        rutas = list(unicos.values())
-        if not rutas:
+        resultados = _rutas_por_ubicaciones(db, resolucion["ubicaciones"])
+        if not resultados:
             return _respuesta(
                 "Sin rutas",
                 "sin_resultados",
                 f"No encontré rutas que pasen por '{destino}'.",
             )
 
-        resultados = [{"codigo_ruta": r["ruta"], **{k: v for k, v in r.items() if k != "ruta"}} for r in rutas]
         opciones = ", ".join(f"{r['codigo_ruta']} ({r['sentido']})" for r in resultados)
         return _respuesta(
             f"Rutas por lugar: {len(resultados)}",
@@ -314,11 +358,16 @@ def consultar(datos: ConsultaRequest, db=Depends(get_db)):
 
     if intencion in ("HORARIO", "FRECUENCIA", "TARIFA", "PROXIMA_UNIDAD"):
         if not ruta_codigo:
+            etiqueta = {
+                "HORARIO": "el horario",
+                "FRECUENCIA": "la frecuencia",
+                "TARIFA": "la tarifa",
+                "PROXIMA_UNIDAD": "la próxima salida teórica",
+            }[intencion]
             return _respuesta(
                 "Indica una ruta",
-                "selector_ruta",
-                f"Indica el código de la ruta para consultar {intencion.lower()}.",
-                rutas=_rutas_selector(db),
+                "aclaracion",
+                f"Indica el código de la ruta para consultar {etiqueta}. Por ejemplo: '{etiqueta} de la ruta 05'.",
                 intencion_solicitada=intencion,
             )
 
@@ -372,11 +421,21 @@ def consultar(datos: ConsultaRequest, db=Depends(get_db)):
                 "aclaracion",
                 f"No reconocí el destino '{destino}'.",
             )
-        nombre = resolucion["ubicaciones"][0]["oficial"] if len(resolucion["ubicaciones"]) == 1 else destino
+        nombre = _nombre_resuelto(destino, resolucion)
+        alternativas = _rutas_por_ubicaciones(db, resolucion["ubicaciones"])
+        if alternativas:
+            return _respuesta(
+                "Falta el origen",
+                "alternativas",
+                f"Entiendo que quieres ir a {nombre}. Estas rutas pasan por ahí. Si me dices desde dónde partes, puedo buscar una ruta directa.",
+                alternativas,
+                contexto=_contexto_busqueda(destino=nombre, pendiente="origen"),
+            )
         return _respuesta(
             "Falta el origen",
             "aclaracion",
             f"Entiendo que quieres ir a {nombre}. ¿Desde dónde partes?",
+            contexto=_contexto_busqueda(destino=nombre, pendiente="origen"),
         )
 
     if not destino:
@@ -385,8 +444,22 @@ def consultar(datos: ConsultaRequest, db=Depends(get_db)):
             return _respuesta_ambigua(origen, "origen", resolucion)
         if resolucion["estado"] == "NO_ENCONTRADO":
             return _respuesta("Origen no reconocido", "aclaracion", f"No reconocí el origen '{origen}'.")
-        nombre = resolucion["ubicaciones"][0]["oficial"] if len(resolucion["ubicaciones"]) == 1 else origen
-        return _respuesta("Falta el destino", "aclaracion", f"Entiendo que partes de {nombre}. ¿A dónde quieres ir?")
+        nombre = _nombre_resuelto(origen, resolucion)
+        alternativas = _rutas_por_ubicaciones(db, resolucion["ubicaciones"])
+        if alternativas:
+            return _respuesta(
+                "Falta el destino",
+                "alternativas",
+                f"Entiendo que partes de {nombre}. Estas rutas pasan por ahí. ¿A dónde quieres ir para buscar una ruta directa?",
+                alternativas,
+                contexto=_contexto_busqueda(origen=nombre, pendiente="destino"),
+            )
+        return _respuesta(
+            "Falta el destino",
+            "aclaracion",
+            f"Entiendo que partes de {nombre}. ¿A dónde quieres ir?",
+            contexto=_contexto_busqueda(origen=nombre, pendiente="destino"),
+        )
 
     resolucion_origen = resolver_referencia(db, origen)
     resolucion_destino = resolver_referencia(db, destino)
@@ -410,10 +483,25 @@ def consultar(datos: ConsultaRequest, db=Depends(get_db)):
                     encontrados.append(ruta)
 
     if not encontrados:
+        nombre_origen = _nombre_resuelto(origen, resolucion_origen)
+        nombre_destino = _nombre_resuelto(destino, resolucion_destino)
+        alternativas = _rutas_por_ubicaciones(db, resolucion_destino["ubicaciones"])
+        if alternativas:
+            return _respuesta(
+                "Sin ruta directa",
+                "alternativas",
+                f"No encontré una ruta directa desde {nombre_origen} hasta {nombre_destino}. Estas rutas sí pasan por el destino; con los datos actuales no puedo confirmar el tramo completo desde tu origen.",
+                alternativas,
+                contexto=_contexto_busqueda(origen=nombre_origen, destino=nombre_destino),
+            )
         return _respuesta(
             "Sin rutas directas",
             "sin_resultados",
             f"No encontré una ruta directa para ir desde {origen} hasta {destino}.",
+            contexto=_contexto_busqueda(
+                origen=_nombre_resuelto(origen, resolucion_origen),
+                destino=_nombre_resuelto(destino, resolucion_destino),
+            ),
         )
 
     resultados = []
@@ -454,6 +542,7 @@ def consultar(datos: ConsultaRequest, db=Depends(get_db)):
         "ruta",
         generar_respuesta(consulta, resultados),
         resultados,
+        contexto={},
     )
 
 

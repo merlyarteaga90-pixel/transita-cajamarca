@@ -2,6 +2,8 @@
 
 Aplicación local con FastAPI, MySQL y frontend web. Ollama es opcional: las consultas frecuentes se interpretan con reglas deterministas y el modelo se usa solo como respaldo para frases no reconocidas.
 
+El frontend está construido con Svelte + Vite y se sirve desde FastAPI usando el build generado en `frontend/dist`.
+
 ## Funciones actuales
 
 - Búsqueda de rutas directas entre dos referencias.
@@ -75,6 +77,17 @@ ollama serve
 Si Ollama está apagado, horarios, tarifas, frecuencias, rutas por lugar y búsquedas con estructuras claras continúan funcionando.
 
 ## Iniciar la aplicación
+
+Si modificaste el frontend o no existe `frontend/dist`, genera el build:
+
+```powershell
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+Luego inicia FastAPI:
 
 ```powershell
 & ".venv\Scripts\python.exe" -m backend.main

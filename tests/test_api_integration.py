@@ -74,7 +74,7 @@ class ApiIntegrationTests(unittest.TestCase):
         for consulta in consultas:
             with self.subTest(consulta=consulta):
                 datos = self.consultar_sin_ollama(consulta).json()
-                self.assertIn(datos["tipo"], {"ruta", "sin_resultados"})
+                self.assertIn(datos["tipo"], {"ruta", "alternativas", "sin_resultados"})
 
     def test_informal_routes_by_place(self):
         datos = self.consultar_sin_ollama(
@@ -87,8 +87,37 @@ class ApiIntegrationTests(unittest.TestCase):
         datos = self.consultar_sin_ollama(
             "Quiero ir a las pozas termales"
         ).json()
-        self.assertEqual(datos["tipo"], "aclaracion")
+        self.assertIn(datos["tipo"], {"aclaracion", "alternativas"})
         self.assertEqual(datos["estado"], "Falta el origen")
+        self.assertEqual(datos["contexto"]["pendiente"], "origen")
+
+    def test_destination_only_can_show_alternatives(self):
+        datos = self.consultar_sin_ollama("como voy a shudal").json()
+        self.assertEqual(datos["tipo"], "alternativas")
+        self.assertEqual(datos["estado"], "Falta el origen")
+        self.assertGreaterEqual(len(datos["resultados"]), 1)
+        self.assertEqual(datos["contexto"]["destino"], "C.P. SHUDAL")
+        self.assertEqual(datos["contexto"]["pendiente"], "origen")
+
+    def test_natural_destination_query_does_not_use_rutas_as_origin(self):
+        datos = self.consultar_sin_ollama("rutas para ir a shudal").json()
+        self.assertEqual(datos["tipo"], "alternativas")
+        self.assertNotIn("origen 'rutas'", datos["respuesta"].lower())
+
+    def test_no_direct_route_returns_destination_alternatives(self):
+        datos = self.consultar_sin_ollama("de shudal al hospital").json()
+        self.assertEqual(datos["tipo"], "alternativas")
+        self.assertEqual(datos["estado"], "Sin ruta directa")
+        self.assertGreaterEqual(len(datos["resultados"]), 1)
+
+    def test_context_completes_missing_origin(self):
+        primera = self.consultar_sin_ollama("quiero ir al hospital").json()
+        segunda = self.client.post(
+            "/api/consultar",
+            json={"consulta": "desde shudal", "contexto": primera["contexto"]},
+        ).json()
+        self.assertNotEqual(segunda["estado"], "Falta el origen")
+        self.assertIn(segunda["tipo"], {"ruta", "alternativas", "sin_resultados"})
 
     def test_vague_trip_requests_both_places(self):
         datos = self.consultar_sin_ollama("Quiero ir").json()
@@ -106,6 +135,36 @@ class ApiIntegrationTests(unittest.TestCase):
                 self.assertEqual(datos["tipo"], "info")
                 self.assertEqual(datos["intencion_solicitada"], intencion)
                 self.assertEqual(datos["resultados"][0]["codigo_ruta"], codigo)
+
+    def test_general_route_code_returns_next_unit_info(self):
+        casos = [
+            "cual es la ruta 05",
+            "dime la ruta 05",
+            "ruta 05",
+            "informacion de la ruta 05",
+        ]
+        for consulta in casos:
+            with self.subTest(consulta=consulta):
+                datos = self.consultar_sin_ollama(consulta).json()
+                self.assertEqual(datos["tipo"], "info")
+                self.assertEqual(datos["intencion_solicitada"], "PROXIMA_UNIDAD")
+                self.assertEqual(datos["resultados"][0]["codigo_ruta"], "R-05")
+
+    def test_incomplete_route_info_does_not_list_all_routes(self):
+        casos = [
+            ("cual es la tarifa", "TARIFA"),
+            ("dime la tarifa", "TARIFA"),
+            ("horario", "HORARIO"),
+            ("frecuencia", "FRECUENCIA"),
+        ]
+        for consulta, intencion in casos:
+            with self.subTest(consulta=consulta):
+                datos = self.consultar_sin_ollama(consulta).json()
+                self.assertEqual(datos["tipo"], "aclaracion")
+                self.assertEqual(datos["estado"], "Indica una ruta")
+                self.assertEqual(datos["intencion_solicitada"], intencion)
+                self.assertEqual(datos["resultados"], [])
+                self.assertEqual(datos["rutas"], [])
 
     def test_numeric_explicit_route_code_is_accepted(self):
         respuesta = self.client.post(

@@ -20,6 +20,7 @@ class ConsultaRequest(BaseModel):
     destino: str | None = None
     intencion: Intencion | None = None
     ruta_codigo: str | int | None = None
+    contexto: dict[str, Any] | None = None
 
 
 class ProximaUnidadRequest(BaseModel):
@@ -31,6 +32,7 @@ class RespuestaAPI(BaseModel):
     icono: str = "🚌"
     tipo: Literal[
         "ruta",
+        "alternativas",
         "rutas_por_lugar",
         "info",
         "selector_ruta",
@@ -44,6 +46,7 @@ class RespuestaAPI(BaseModel):
     candidatos: list[str] = Field(default_factory=list)
     rutas: list[dict[str, Any]] = Field(default_factory=list)
     intencion_solicitada: str | None = None
+    contexto: dict[str, Any] = Field(default_factory=dict)
 
 
 class ProximaUnidadResponse(BaseModel):

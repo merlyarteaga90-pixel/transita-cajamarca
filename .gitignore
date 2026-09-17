@@ -24,6 +24,7 @@ env/
 *.pfx
 
 # Build/package output
+node_modules/
 build/
 dist/
 *.egg-info/

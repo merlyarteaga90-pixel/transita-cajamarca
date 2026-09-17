@@ -28,6 +28,39 @@ class QueryParserTests(unittest.TestCase):
         self.assertEqual(resultado["intencion"], "RUTAS_POR_LUGAR")
         self.assertEqual(resultado["destino"], "Av. Manco Cápac")
 
+    def test_destination_without_origin_patterns(self):
+        casos = {
+            "como voy a shudal": "shudal",
+            "quiero ir al hospital": "hospital",
+            "rutas para ir a shudal": "shudal",
+            "q ruta me lleva al hospital": "hospital",
+        }
+        for consulta, destino in casos.items():
+            with self.subTest(consulta=consulta):
+                resultado = interpretar_consulta_clara(consulta)
+                self.assertEqual(resultado["intencion"], "BUSCAR_RUTA")
+                self.assertIsNone(resultado["origen"])
+                self.assertEqual(resultado["destino"], destino)
+
+    def test_origin_to_destination_with_al(self):
+        resultado = interpretar_consulta_clara("de shudal al hospital")
+        self.assertEqual(resultado["intencion"], "BUSCAR_RUTA")
+        self.assertEqual(resultado["origen"], "shudal")
+        self.assertEqual(resultado["destino"], "hospital")
+
+    def test_route_code_general_info_patterns(self):
+        casos = [
+            "cual es la ruta 05",
+            "dime la ruta 05",
+            "ruta 05",
+            "informacion de la ruta 05",
+        ]
+        for consulta in casos:
+            with self.subTest(consulta=consulta):
+                resultado = interpretar_consulta_clara(consulta)
+                self.assertEqual(resultado["intencion"], "PROXIMA_UNIDAD")
+                self.assertEqual(resultado["ruta_codigo"], "05")
+
 
 class RouteCodeTests(unittest.TestCase):
     def test_supported_formats(self):

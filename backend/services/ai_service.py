@@ -91,6 +91,30 @@ Ejemplos:
     "ruta_codigo": null
 }}
 
+"Quiero ir al hospital" →
+{{
+    "intencion": "BUSCAR_RUTA",
+    "origen": null,
+    "destino": "hospital",
+    "ruta_codigo": null
+}}
+
+"Rutas para ir a Shudal" →
+{{
+    "intencion": "BUSCAR_RUTA",
+    "origen": null,
+    "destino": "shudal",
+    "ruta_codigo": null
+}}
+
+"Qué combi me lleva al hospital" →
+{{
+    "intencion": "BUSCAR_RUTA",
+    "origen": null,
+    "destino": "hospital",
+    "ruta_codigo": null
+}}
+
 RUTAS_POR_LUGAR:
 Cuando pregunta qué rutas pasan por un lugar.
 El lugar puede ser un nombre coloquial: cópialo tal cual
@@ -115,6 +139,25 @@ aparece en la consulta y colócalo en "destino".
 PROXIMA_UNIDAD:
 Cuando pregunta por la próxima unidad o combi.
 Si menciona un número de ruta, colócalo en ruta_codigo.
+También usa PROXIMA_UNIDAD cuando el usuario pide información general
+de una ruta por código sin pedir horario, frecuencia o tarifa específica.
+
+Ejemplos:
+"Cuál es la ruta 05" →
+{{
+    "intencion": "PROXIMA_UNIDAD",
+    "origen": null,
+    "destino": null,
+    "ruta_codigo": "05"
+}}
+
+"Información de la ruta 05" →
+{{
+    "intencion": "PROXIMA_UNIDAD",
+    "origen": null,
+    "destino": null,
+    "ruta_codigo": "05"
+}}
 
 HORARIO:
 Cuando pregunta a qué hora opera una ruta.
@@ -142,7 +185,7 @@ NO lo cortes a "plaza" ni a "baños del inca".
 Puedes eliminar únicamente las palabras de conexión que
 rodean al lugar, como:
 "estoy en", "quiero ir a", "ir a", "hasta", "hacia",
-"desde", "de", "a", "por"
+"desde", "de", "a", "al", "a la", "a los", "a las", "por"
 
 Ejemplos:
 "Estoy en Shudal y quiero ir a Baños del Inca"

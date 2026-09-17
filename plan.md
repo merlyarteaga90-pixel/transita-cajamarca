@@ -8,7 +8,7 @@ La aplicación alcanzó una línea base funcional y comprobable:
 - MySQL es la única fuente de rutas, sentidos, horarios, frecuencias y tarifas.
 - El parser determinista resuelve primero las consultas frecuentes.
 - Ollama es un respaldo opcional con timeout de 4 segundos, no un requisito para el flujo principal.
-- El frontend tiene cards específicas para recorridos, rutas por lugar, información y familias de rutas.
+- El frontend Svelte tiene cards específicas para recorridos, rutas por lugar, información y familias de rutas.
 - Los lugares ambiguos muestran únicamente una lista de candidatos.
 - Hay 24 pruebas automatizadas de servicios e integración.
 
@@ -82,7 +82,8 @@ Tipos vigentes:
 - `backend/services/reference_service.py`: alias y coincidencia aproximada.
 - `backend/services/route_engine.py`: búsqueda de rutas y sentidos.
 - `backend/services/schedule_service.py`: cálculo de salida teórica con zona `America/Lima`.
-- `frontend/app.js`: renderizadores, cancelación de solicitudes y estado de servicio.
+- `frontend/src/`: componentes Svelte, cliente API, estado de consulta y utilidades de voz/formato.
+- `frontend/style.css`: estilos compartidos de la interfaz.
 - `tests/`: pruebas permanentes.
 
 ## Datos Actuales
