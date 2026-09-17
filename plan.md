@@ -5,7 +5,7 @@
 La aplicación alcanzó una línea base funcional y comprobable:
 
 - FastAPI valida entradas con Pydantic.
-- MySQL es la única fuente de rutas, sentidos, horarios, frecuencias y tarifas.
+- SQLite es la única fuente de rutas, sentidos, horarios, frecuencias y tarifas.
 - El parser determinista resuelve primero las consultas frecuentes.
 - Ollama es un respaldo opcional con timeout de 4 segundos, no un requisito para el flujo principal.
 - El frontend Svelte tiene cards específicas para recorridos, rutas por lugar, información y familias de rutas.
@@ -25,7 +25,7 @@ Consulta
   -> parser determinista
   -> Ollama solo si el parser no reconoce la frase
   -> resolución de alias y coincidencia aproximada
-  -> búsqueda de todas las opciones directas en MySQL
+  -> búsqueda de todas las opciones directas en SQLite
   -> respuesta estructurada
   -> cards del frontend
 ```

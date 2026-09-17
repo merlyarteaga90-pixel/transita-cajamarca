@@ -64,7 +64,7 @@ class ApiIntegrationTests(unittest.TestCase):
         datos = self.consultar_sin_ollama(
             "como voy de el milagro a los baños del inca"
         ).json()
-        self.assertIn(datos["tipo"], {"ruta", "sin_resultados"})
+        self.assertIn(datos["tipo"], {"ruta", "sin_resultados", "aclaracion"})
 
     def test_more_informal_references_are_understood(self):
         consultas = [

@@ -1,6 +1,6 @@
 # Asistente de Rutas de Cajamarca
 
-Aplicación local con FastAPI, MySQL y frontend web. Ollama es opcional: las consultas frecuentes se interpretan con reglas deterministas y el modelo se usa solo como respaldo para frases no reconocidas.
+Aplicación local con FastAPI, SQLite y frontend web. Ollama es opcional: las consultas frecuentes se interpretan con reglas deterministas y el modelo se usa solo como respaldo para frases no reconocidas.
 
 El frontend está construido con Svelte + Vite y se sirve desde FastAPI usando el build generado en `frontend/dist`.
 
@@ -15,12 +15,12 @@ El frontend está construido con Svelte + Vite y se sirve desde FastAPI usando e
 - Lista de candidatos cuando un lugar es ambiguo.
 - Funcionamiento principal aunque Ollama no esté disponible.
 
-MySQL es la única fuente de rutas y datos operativos. IDA y VUELTA se procesan como recorridos independientes. Solo se buscan rutas directas; no hay transbordos todavía.
+SQLite es la única fuente de rutas y datos operativos. IDA y VUELTA se procesan como recorridos independientes. Solo se buscan rutas directas; no hay transbordos todavía.
 
 ## Requisitos
 
 - Python 3.12 recomendado.
-- MySQL en `localhost:3306` con la base `asistente_rutas`.
+- SQLite (archivo local `transita_cajamarca.db`).
 - Ollama opcional con el modelo `llama3.2:3b`.
 
 ## Configuración
@@ -38,14 +38,10 @@ py -3.12 -m venv .venv
 & ".venv\Scripts\python.exe" -m pip install -r requirements.txt
 ```
 
-Copia `.env.example` como `.env` y configura los datos de MySQL. La configuración actual esperada es:
+Copia `.env.example` como `.env`. La configuración actual esperada es:
 
 ```dotenv
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=asistente_rutas
-DB_USER=root
-DB_PASSWORD=
+DB_PATH=transita_cajamarca.db
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2:3b
 OLLAMA_TIMEOUT=4
@@ -53,19 +49,12 @@ OLLAMA_TIMEOUT=4
 
 ## Base de datos
 
-Aplicar los esquemas en orden:
-
-1. `database/01_schema.sql`
-2. `database/03_lugares_alias.sql`
-
-Importadores disponibles:
+Crear la base y cargar los datos:
 
 ```powershell
-& ".venv\Scripts\python.exe" resources\importar_excel_v4.py
-& ".venv\Scripts\python.exe" resources\importar_diccionario_alias.py
+sqlite3 transita_cajamarca.db < database/00_schema.sql
+sqlite3 transita_cajamarca.db < database/01_seed.sql
 ```
-
-Los importadores usan por defecto los archivos versionados en `resources/` (`listado_rutas_cajamarca_2024.xlsx` y `lugares_alias.csv`). Limpian sus tablas antes de insertar: úsalos contra una base de respaldo si tienes datos propios.
 
 ## Ollama opcional
 
@@ -117,7 +106,7 @@ Pruebas automatizadas:
 & ".venv\Scripts\python.exe" -m unittest discover -s tests -v
 ```
 
-Las pruebas de integración requieren MySQL, pero no requieren un servidor HTTP ni Ollama activos.
+Las pruebas no requieren un servidor HTTP ni Ollama activos.
 
 ## Interpretación de datos
 

@@ -241,7 +241,7 @@ def health(db=Depends(get_db)):
         puntos = db.execute(text("SELECT COUNT(*) FROM puntos_recorrido")).scalar()
         alias = db.execute(text("SELECT COUNT(*) FROM lugares_alias WHERE activo = TRUE")).scalar()
     except Exception as exc:
-        raise HTTPException(status_code=503, detail="MySQL no está disponible") from exc
+        raise HTTPException(status_code=503, detail="Base de datos no disponible") from exc
 
     ollama = "no_disponible"
     try:

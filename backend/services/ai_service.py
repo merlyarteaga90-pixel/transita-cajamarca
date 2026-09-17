@@ -23,7 +23,7 @@ def analizar_consulta(mensaje: str):
     - destino
     - ruta_codigo
 
-    Ollama NO decide qué ruta existe. MySQL es la fuente de verdad.
+    Ollama NO decide qué ruta existe. SQLite es la fuente de verdad.
     """
 
     prompt = f"""
