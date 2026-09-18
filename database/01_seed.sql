@@ -1126,5 +1126,144 @@ INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacio
 INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('zona industrial cajamarca', 'zona industrial cajamarca', 'AV. INDUSTRIAL', 'av industrial', TRUE);
 
 -- ============================================================
+-- ALIASES ENRIQUECIDOS: lugares turísticos, educativos, religiosos,
+-- salud, comerciales, transporte y referencias urbanas de Cajamarca.
+-- ============================================================
+
+-- ---- TURÍSTICOS ----
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('cuarto del rescate', 'cuarto del rescate', 'Cuarto del Rescate', 'cuarto del rescate', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('cuarto de rescate', 'cuarto de rescate', 'Cuarto del Rescate', 'cuarto del rescate', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('cuarto de rescate de atahualpa', 'cuarto de rescate de atahualpa', 'Cuarto del Rescate', 'cuarto del rescate', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('cerro santa apolonia', 'cerro santa apolonia', 'Cerro Santa Apolonia', 'cerro santa apolonia', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('santa apolonia', 'santa apolonia', 'Cerro Santa Apolonia', 'cerro santa apolonia', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('la silla del inca', 'la silla del inca', 'Cerro Santa Apolonia', 'cerro santa apolonia', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('rumitiana', 'rumitiana', 'Cerro Santa Apolonia', 'cerro santa apolonia', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('cumbemayo', 'cumbemayo', 'Complejo Arqueológico de Cumbemayo', 'complejo arqueologico de cumbemayo', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('complejo de cumbemayo', 'complejo de cumbemayo', 'Complejo Arqueológico de Cumbemayo', 'complejo arqueologico de cumbemayo', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('ventanillas de otuzco', 'ventanillas de otuzco', 'Ventanillas de Otuzco', 'ventanillas de otuzco', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('las ventanillas', 'las ventanillas', 'Ventanillas de Otuzco', 'ventanillas de otuzco', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('ventanillas', 'ventanillas', 'Ventanillas de Otuzco', 'ventanillas de otuzco', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('ventanillas de combayo', 'ventanillas de combayo', 'Ventanillas de Combayo', 'ventanillas de combayo', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('granja porcon', 'granja porcon', 'Granja Porcón', 'granja porcon', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('la granja', 'la granja', 'Granja Porcón', 'granja porcon', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('porcon', 'porcon', 'Granja Porcón', 'granja porcon', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('alameda de los incas', 'alameda de los incas', 'Alameda de los Incas', 'alameda de los incas', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('qhapaq nan', 'qhapaq nan', 'Alameda de los Incas', 'alameda de los incas', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('hacienda la colpa', 'hacienda la colpa', 'Hacienda La Colpa', 'hacienda la colpa', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('la colpa', 'la colpa', 'Hacienda La Colpa', 'hacienda la colpa', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('la collpa', 'la collpa', 'Hacienda La Colpa', 'hacienda la colpa', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('hacienda tres molinos', 'hacienda tres molinos', 'Hacienda Tres Molinos', 'hacienda tres molinos', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('tres molinos', 'tres molinos', 'Hacienda Tres Molinos', 'hacienda tres molinos', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('cataratas de llacanora', 'cataratas de llacanora', 'Cataratas de Llacanora', 'cataratas de llacanora', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('llacanora', 'llacanora', 'Cataratas de Llacanora', 'cataratas de llacanora', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('cerro callacpuma', 'cerro callacpuma', 'Cerro Callacpuma', 'cerro callacpuma', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('laguna de san nicolas', 'laguna de san nicolas', 'Laguna de San Nicolás', 'laguna de san nicolas', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('los alpes', 'los alpes', 'Los Alpes', 'los alpes', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('fundo los alpes', 'fundo los alpes', 'Los Alpes', 'los alpes', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('fundo los allpes', 'fundo los allpes', 'Los Alpes', 'los alpes', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('jardín botánico de las hortensias', 'jardin botanico de las hortensias', 'Jardín Botánico de las Hortensias', 'jardin botanico de las hortensias', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('puente colgante', 'puente colgante', 'Puente Colgante', 'puente colgante', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('mirador de la campiña', 'mirador de la campina', 'Mirador de la Campiña', 'mirador de la campina', TRUE);
+
+-- ---- EDUCATIVOS ----
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('universidad nacional de cajamarca', 'universidad nacional de cajamarca', 'Universidad Nacional de Cajamarca', 'universidad nacional de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('unc', 'unc', 'Universidad Nacional de Cajamarca', 'universidad nacional de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('la universidad', 'la universidad', 'Universidad Nacional de Cajamarca', 'universidad nacional de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('universidad', 'universidad', 'Universidad Nacional de Cajamarca', 'universidad nacional de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('la u', 'la u', 'Universidad Nacional de Cajamarca', 'universidad nacional de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('upagu', 'upagu', 'Universidad Privada Antonio Guillermo Urrelo', 'universidad privada antonio guillermo urrelo', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('universidad upagu', 'universidad upagu', 'Universidad Privada Antonio Guillermo Urrelo', 'universidad privada antonio guillermo urrelo', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('upn', 'upn', 'Universidad Privada del Norte', 'universidad privada del norte', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('universidad privada del norte', 'universidad privada del norte', 'Universidad Privada del Norte', 'universidad privada del norte', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('instituto san gabriel', 'instituto san gabriel', 'Instituto San Gabriel', 'instituto san gabriel', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('san gabriel', 'san gabriel', 'Instituto San Gabriel', 'instituto san gabriel', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('ist cajamarca', 'ist cajamarca', 'Instituto de Educación Superior Tecnológico Público Cajamarca', 'instituto de educacion superior tecnologico publico cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('tecnologico cajamarca', 'tecnologico cajamarca', 'Instituto de Educación Superior Tecnológico Público Cajamarca', 'instituto de educacion superior tecnologico publico cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('san ramon', 'san ramon', 'Institución Educativa Emblemática San Ramón', 'institucion educativa emblematica san ramon', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('colegio san ramon', 'colegio san ramon', 'Institución Educativa Emblemática San Ramón', 'institucion educativa emblematica san ramon', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el glorioso san ramon', 'el glorioso san ramon', 'Institución Educativa Emblemática San Ramón', 'institucion educativa emblematica san ramon', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el rosario', 'el rosario', 'Colegio Nuestra Señora del Rosario', 'colegio nuestra senora del rosario', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('colegio rosario', 'colegio rosario', 'Colegio Nuestra Señora del Rosario', 'colegio nuestra senora del rosario', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('colegio santa teresita', 'colegio santa teresita', 'Colegio Santa Teresita', 'colegio santa teresita', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('saco oliveros', 'saco oliveros', 'Colegio Saco Oliveros', 'colegio saco oliveros', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('innova schools', 'innova schools', 'Innova Schools Cajamarca', 'innova schools cajamarca', TRUE);
+
+-- ---- RELIGIOSOS ----
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('catedral', 'catedral', 'Catedral de Cajamarca', 'catedral de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('la catedral', 'la catedral', 'Catedral de Cajamarca', 'catedral de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('catedral de cajamarca', 'catedral de cajamarca', 'Catedral de Cajamarca', 'catedral de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('iglesia santa catalina', 'iglesia santa catalina', 'Catedral de Cajamarca', 'catedral de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('iglesia matriz santa catalina', 'iglesia matriz santa catalina', 'Catedral de Cajamarca', 'catedral de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('san francisco', 'san francisco', 'Iglesia de San Francisco', 'iglesia de san francisco', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('iglesia san francisco', 'iglesia san francisco', 'Iglesia de San Francisco', 'iglesia de san francisco', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('belen', 'belen', 'Conjunto Monumental de Belén', 'conjunto monumental de belen', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('complejo belen', 'complejo belen', 'Conjunto Monumental de Belén', 'conjunto monumental de belen', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('conjunto monumental de belen', 'conjunto monumental de belen', 'Conjunto Monumental de Belén', 'conjunto monumental de belen', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('la recoleta', 'la recoleta', 'Iglesia y Convento de La Recoleta', 'iglesia y convento de la recoleta', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('recoleta', 'recoleta', 'Iglesia y Convento de La Recoleta', 'iglesia y convento de la recoleta', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('las monjas', 'las monjas', 'Convento de las Concepcionistas Descalzas', 'convento de las concepcionistas descalzas', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('convento concepcionistas', 'convento concepcionistas', 'Convento de las Concepcionistas Descalzas', 'convento de las concepcionistas descalzas', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('capilla virgen de fatima', 'capilla virgen de fatima', 'Capilla Virgen de Fátima', 'capilla virgen de fatima', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('virgen de los dolores', 'virgen de los dolores', 'Santuario de la Virgen de los Dolores', 'santuario de la virgen de los dolores', TRUE);
+
+-- ---- SALUD ----
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('hospital regional', 'hospital regional', 'Hospital Regional Docente Cajamarca', 'hospital regional docente cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el regional', 'el regional', 'Hospital Regional Docente Cajamarca', 'hospital regional docente cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('hospital regional de cajamarca', 'hospital regional de cajamarca', 'Hospital Regional Docente Cajamarca', 'hospital regional docente cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('essalud', 'essalud', 'Hospital II-1 Cajamarca (EsSalud)', 'hospital ii1 cajamarca essalud', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el essalud', 'el essalud', 'Hospital II-1 Cajamarca (EsSalud)', 'hospital ii1 cajamarca essalud', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el seguro', 'el seguro', 'Hospital II-1 Cajamarca (EsSalud)', 'hospital ii1 cajamarca essalud', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('seguro social', 'seguro social', 'Hospital II-1 Cajamarca (EsSalud)', 'hospital ii1 cajamarca essalud', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('limatambo', 'limatambo', 'Clínica Limatambo Cajamarca', 'clinica limatambo cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('clinica limatambo', 'clinica limatambo', 'Clínica Limatambo Cajamarca', 'clinica limatambo cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('san lorenzo', 'san lorenzo', 'Clínica San Lorenzo', 'clinica san lorenzo', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('clinica san lorenzo', 'clinica san lorenzo', 'Clínica San Lorenzo', 'clinica san lorenzo', TRUE);
+
+-- ---- COMERCIALES ----
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('mercado central', 'mercado central', 'Mercado Central de Cajamarca', 'mercado central de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el mercado central', 'el mercado central', 'Mercado Central de Cajamarca', 'mercado central de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el central', 'el central', 'Mercado Central de Cajamarca', 'mercado central de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('mercado', 'mercado', 'Mercado Central de Cajamarca', 'mercado central de cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('mercado san antonio', 'mercado san antonio', 'Mercado San Antonio', 'mercado san antonio', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('mercado san martin', 'mercado san martin', 'Mercado San Martín', 'mercado san martin', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('real plaza', 'real plaza', 'Real Plaza Cajamarca', 'real plaza cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el real plaza', 'el real plaza', 'Real Plaza Cajamarca', 'real plaza cajamarca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el quinde', 'el quinde', 'El Quinde Shopping Plaza', 'el quinde shopping plaza', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el quinde shopping', 'el quinde shopping', 'El Quinde Shopping Plaza', 'el quinde shopping plaza', TRUE);
+
+-- ---- TRANSPORTE / AEROPUERTO ----
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('aeropuerto mayor general fap armando revoredo iglesias', 'aeropuerto mayor general fap armando revoredo iglesias', 'Aeropuerto Mayor General FAP Armando Revoredo Iglesias', 'aeropuerto mayor general fap armando revoredo iglesias', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('aeropuerto de cajamarca', 'aeropuerto de cajamarca', 'Aeropuerto Mayor General FAP Armando Revoredo Iglesias', 'aeropuerto mayor general fap armando revoredo iglesias', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('aeropuerto armando revoredo', 'aeropuerto armando revoredo', 'Aeropuerto Mayor General FAP Armando Revoredo Iglesias', 'aeropuerto mayor general fap armando revoredo iglesias', TRUE);
+
+-- ---- REFERENCIAS URBANAS (plazas, óvalos, barrios) ----
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('plazuela bolognesi', 'plazuela bolognesi', 'Plazuela Bolognesi', 'plazuela bolognesi', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('bolognesi', 'bolognesi', 'Plazuela Bolognesi', 'plazuela bolognesi', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('ovalo las banderas', 'ovalo las banderas', 'Óvalo Las Banderas', 'ovalo las banderas', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('las banderas', 'las banderas', 'Óvalo Las Banderas', 'ovalo las banderas', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('plazuela miguel grau', 'plazuela miguel grau', 'Plazuela Miguel Grau', 'plazuela miguel grau', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('barrio san sebastian', 'barrio san sebastian', 'Barrio San Sebastián', 'barrio san sebastian', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('san sebastian', 'san sebastian', 'Barrio San Sebastián', 'barrio san sebastian', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('barrio la merced', 'barrio la merced', 'Barrio La Merced', 'barrio la merced', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('la merced', 'la merced', 'Barrio La Merced', 'barrio la merced', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('av atahualpa', 'av atahualpa', 'Av. Atahualpa', 'av atahualpa', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('avenida atahualpa', 'avenida atahualpa', 'Av. Atahualpa', 'av atahualpa', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('av de los heroes', 'av de los heroes', 'Av. de los Héroes', 'av de los heroes', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('avenida de los heroes', 'avenida de los heroes', 'Av. de los Héroes', 'av de los heroes', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('los heroes', 'los heroes', 'Av. de los Héroes', 'av de los heroes', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('jr amalia puga', 'jr amalia puga', 'Jr. Amalia Puga', 'jr amalia puga', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('jiron amalia puga', 'jiron amalia puga', 'Jr. Amalia Puga', 'jr amalia puga', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('amalia puga', 'amalia puga', 'Jr. Amalia Puga', 'jr amalia puga', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('urbanizacion horacio zevallos', 'urbanizacion horacio zevallos', 'Urbanización Horacio Zevallos', 'urbanizacion horacio zevallos', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('horacio zevallos', 'horacio zevallos', 'Urbanización Horacio Zevallos', 'urbanizacion horacio zevallos', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('cinco esquinas', 'cinco esquinas', 'Cinco Esquinas', 'cinco esquinas', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('ovalo del inca', 'ovalo del inca', 'Óvalo del Inca', 'ovalo del inca', TRUE);
+INSERT INTO lugares_alias (referencia_original, referencia_normalizada, ubicacion_oficial, ubicacion_normalizada, activo) VALUES ('el ovalo', 'el ovalo', 'Óvalo del Inca', 'ovalo del inca', TRUE);
+
+-- ============================================================
+-- END OF SEED DATA
+-- ============================================================
+
+-- ============================================================
 -- END OF SEED DATA
 -- ============================================================

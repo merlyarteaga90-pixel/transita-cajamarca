@@ -20,21 +20,9 @@ from backend.schemas import (
     ProximaUnidadResponse,
     RespuestaAPI,
 )
-from backend.services.ai_service import analizar_consulta
-from backend.services.query_parser import interpretar_consulta_clara
-from backend.services.reference_service import resolver_referencia
-from backend.services.respuesta_service import generar_respuesta
-from backend.services.route_code_service import (
-    normalizar_codigo_ruta,
-    resolver_codigos_ruta,
-)
-from backend.services.route_engine import (
-    buscar_ruta,
-    buscar_rutas_por_lugar,
-    fmt_hora,
-    normalizar_referencia,
-    obtener_todas_rutas,
-)
+from backend.services import assistant_service
+from backend.services.route_code_service import resolver_codigos_ruta
+from backend.services.route_engine import fmt_hora, obtener_todas_rutas
 from backend.services.schedule_service import calcular_proxima_unidad
 
 
@@ -56,174 +44,6 @@ def get_db():
         db.close()
 
 
-def _respuesta(estado, tipo, respuesta, resultados=None, icono="🚌", **extra):
-    return {
-        "estado": estado,
-        "icono": icono,
-        "tipo": tipo,
-        "resultados": resultados or [],
-        "respuesta": respuesta,
-        **extra,
-    }
-
-
-def _referencia_presente(referencia: str | None, consulta: str) -> bool:
-    if not referencia:
-        return True
-    ref_n = normalizar_referencia(referencia)
-    return bool(ref_n and ref_n in normalizar_referencia(consulta))
-
-
-def _candidatos(resolucion: dict) -> list[str]:
-    candidatos = []
-    for sugerencia in resolucion.get("sugerencias", []):
-        nombre = sugerencia.get("nombre") or sugerencia.get("ubicacion")
-        if nombre and nombre not in candidatos:
-            candidatos.append(nombre)
-    return candidatos[:5]
-
-
-def _respuesta_ambigua(referencia: str, rol: str, resolucion: dict):
-    candidatos = _candidatos(resolucion)
-    return _respuesta(
-        f"{rol.capitalize()} ambiguo",
-        "aclaracion",
-        f"'{referencia}' puede referirse a varios lugares. Escribe el nombre completo.",
-        candidatos=candidatos,
-    )
-
-
-def _rutas_por_ubicaciones(db, ubicaciones: list[dict]) -> list[dict]:
-    encontrados = []
-    for ubicacion in ubicaciones:
-        encontrados.extend(buscar_rutas_por_lugar(db, ubicacion["oficial"]))
-
-    unicos = {}
-    for ruta in encontrados:
-        clave = (ruta["ruta"], ruta["sentido"])
-        unicos.setdefault(clave, ruta)
-
-    return [
-        {"codigo_ruta": ruta["ruta"], **{k: v for k, v in ruta.items() if k != "ruta"}}
-        for ruta in unicos.values()
-    ]
-
-
-def _nombre_resuelto(referencia: str, resolucion: dict) -> str:
-    ubicaciones = resolucion.get("ubicaciones", [])
-    return ubicaciones[0]["oficial"] if len(ubicaciones) == 1 else referencia
-
-
-def _contexto_busqueda(origen=None, destino=None, pendiente=None):
-    contexto = {"intencion": "BUSCAR_RUTA"}
-    if origen:
-        contexto["origen"] = origen
-    if destino:
-        contexto["destino"] = destino
-    if pendiente:
-        contexto["pendiente"] = pendiente
-    return contexto
-
-
-def _aplicar_contexto(interpretacion: dict, contexto: dict | None) -> dict:
-    if not contexto or interpretacion.get("intencion") != "BUSCAR_RUTA":
-        return interpretacion
-    if contexto.get("intencion") != "BUSCAR_RUTA":
-        return interpretacion
-
-    pendiente = contexto.get("pendiente")
-    if pendiente == "origen" and not interpretacion.get("destino") and contexto.get("destino"):
-        interpretacion["destino"] = contexto["destino"]
-    if pendiente == "destino" and not interpretacion.get("origen") and contexto.get("origen"):
-        interpretacion["origen"] = contexto["origen"]
-    return interpretacion
-
-
-def _rutas_selector(db):
-    rutas = []
-    vistos = set()
-    for ruta in obtener_todas_rutas(db):
-        if ruta["codigo"] in vistos:
-            continue
-        vistos.add(ruta["codigo"])
-        rutas.append({**ruta, "codigo_ruta": ruta["codigo"]})
-    return rutas
-
-
-def _fila_ruta(db, codigo: str):
-    return db.execute(
-        text(
-            """
-            SELECT r.codigo, r.nombre AS ruta_nombre,
-                   r.tarifa_general, r.tarifa_medio_pasaje,
-                   r.frecuencia_general_min,
-                   r.horario_inicio, r.horario_fin,
-                   e.nombre_comercial, e.razon_social, e.ruc
-            FROM rutas r
-            LEFT JOIN empresas e ON e.id = r.empresa_id
-            WHERE r.codigo = :codigo AND r.activo = TRUE
-            LIMIT 1
-            """
-        ),
-        {"codigo": codigo},
-    ).mappings().first()
-
-
-def _datos_info_rutas(db, codigos: list[str], intencion: str):
-    resultados = []
-    for codigo in codigos:
-        fila = _fila_ruta(db, codigo)
-        if not fila:
-            continue
-        hi = fmt_hora(fila["horario_inicio"]) or None
-        hf = fmt_hora(fila["horario_fin"]) or None
-        frecuencia = int(fila["frecuencia_general_min"]) if fila["frecuencia_general_min"] is not None else None
-        item = {
-            "codigo_ruta": fila["codigo"],
-            "ruta_nombre": fila["ruta_nombre"],
-            "nombre_comercial": fila["nombre_comercial"] or fila["razon_social"] or "",
-            "razon_social": fila["razon_social"] or "",
-            "ruc": fila["ruc"] or "",
-            "horario": f"{hi} - {hf}" if hi and hf else None,
-            "horario_inicio": hi,
-            "horario_fin": hf,
-            "frecuencia_min": frecuencia,
-            "tarifa_general": float(fila["tarifa_general"]) if fila["tarifa_general"] is not None else None,
-            "tarifa_medio_pasaje": float(fila["tarifa_medio_pasaje"]) if fila["tarifa_medio_pasaje"] is not None else None,
-            "consulta_tipo": intencion,
-        }
-        if intencion == "PROXIMA_UNIDAD":
-            calculo = calcular_proxima_unidad(
-                fila["horario_inicio"], fila["horario_fin"], frecuencia
-            )
-            item.update({
-                "estado_servicio": calculo["estado"],
-                "proxima_salida": calculo["proxima_salida"],
-                "proximo_paso_min": calculo["minutos_restantes"],
-                "hora_actual": calculo["hora_actual"],
-                "mensaje_servicio": calculo["mensaje"],
-            })
-        resultados.append(item)
-    return resultados
-
-
-def _interpretar(consulta: str):
-    interpretacion = interpretar_consulta_clara(consulta)
-    if interpretacion:
-        return interpretacion
-
-    try:
-        interpretacion = analizar_consulta(consulta)
-    except Exception:
-        return None
-
-    if not _referencia_presente(interpretacion.get("origen"), consulta):
-        interpretacion["origen"] = None
-    if not _referencia_presente(interpretacion.get("destino"), consulta):
-        interpretacion["destino"] = None
-    return interpretacion
-
-
 @app.get("/")
 def inicio():
     svelte_index = os.path.join(RUTA_FRONTEND_DIST, "index.html")
@@ -239,9 +59,19 @@ def health(db=Depends(get_db)):
         rutas = db.execute(text("SELECT COUNT(*) FROM rutas")).scalar()
         sentidos = db.execute(text("SELECT COUNT(*) FROM sentidos")).scalar()
         puntos = db.execute(text("SELECT COUNT(*) FROM puntos_recorrido")).scalar()
-        alias = db.execute(text("SELECT COUNT(*) FROM lugares_alias WHERE activo = TRUE")).scalar()
+        alias = db.execute(
+            text("SELECT COUNT(*) FROM lugares_alias WHERE activo = TRUE")
+        ).scalar()
+        lugares_info = db.execute(
+            text("SELECT COUNT(*) FROM lugares_info WHERE activo = TRUE")
+        ).scalar()
+        establecimientos = db.execute(
+            text("SELECT COUNT(*) FROM establecimientos_cercanos WHERE activo = TRUE")
+        ).scalar()
     except Exception as exc:
-        raise HTTPException(status_code=503, detail="Base de datos no disponible") from exc
+        raise HTTPException(
+            status_code=503, detail="Base de datos no disponible"
+        ) from exc
 
     ollama = "no_disponible"
     try:
@@ -261,6 +91,8 @@ def health(db=Depends(get_db)):
         "sentidos": sentidos,
         "puntos": puntos,
         "alias": alias,
+        "lugares_info": lugares_info,
+        "establecimientos": establecimientos,
     }
 
 
@@ -280,10 +112,50 @@ def proxima_unidad(datos: ProximaUnidadRequest, db=Depends(get_db)):
             detail=f"Especifica una variante: {', '.join(codigos)}",
         )
 
-    item = _datos_info_rutas(db, codigos, "PROXIMA_UNIDAD")[0]
+    codigo = codigos[0]
+    fila = db.execute(
+        text(
+            """
+            SELECT r.codigo, r.nombre AS ruta_nombre,
+                   r.tarifa_general, r.tarifa_medio_pasaje,
+                   r.frecuencia_general_min,
+                   r.horario_inicio, r.horario_fin,
+                   e.nombre_comercial, e.razon_social, e.ruc
+            FROM rutas r
+            LEFT JOIN empresas e ON e.id = r.empresa_id
+            WHERE r.codigo = :codigo AND r.activo = TRUE
+            LIMIT 1
+            """
+        ),
+        {"codigo": codigo},
+    ).mappings().first()
+
+    if not fila:
+        raise HTTPException(status_code=404, detail="Ruta no encontrada")
+
+    hi = fmt_hora(fila["horario_inicio"]) or None
+    hf = fmt_hora(fila["horario_fin"]) or None
+    frecuencia = (
+        int(fila["frecuencia_general_min"])
+        if fila["frecuencia_general_min"] is not None
+        else None
+    )
+    calculo = calcular_proxima_unidad(fila["horario_inicio"], fila["horario_fin"], frecuencia)
+
     return {
-        **item,
-        "proximo_paso_min": item["proximo_paso_min"],
+        "codigo_ruta": fila["codigo"],
+        "ruta_nombre": fila["ruta_nombre"],
+        "nombre_comercial": fila["nombre_comercial"],
+        "razon_social": fila["razon_social"],
+        "ruc": fila["ruc"],
+        "frecuencia_min": frecuencia,
+        "horario_inicio": hi,
+        "horario_fin": hf,
+        "estado_servicio": calculo["estado"],
+        "proxima_salida": calculo["proxima_salida"],
+        "proximo_paso_min": calculo["minutos_restantes"],
+        "hora_actual": calculo["hora_actual"],
+        "mensaje_servicio": calculo["mensaje"],
     }
 
 
@@ -292,258 +164,7 @@ def consultar(datos: ConsultaRequest, db=Depends(get_db)):
     consulta = datos.consulta.strip()
     if not consulta:
         raise HTTPException(status_code=422, detail="La consulta no puede estar vacía")
-
-    interpretacion = {
-        "intencion": datos.intencion,
-        "origen": datos.origen,
-        "destino": datos.destino,
-        "ruta_codigo": str(datos.ruta_codigo) if datos.ruta_codigo is not None else None,
-    }
-    if not interpretacion["intencion"]:
-        interpretacion = _interpretar(consulta)
-    if not interpretacion:
-        return _respuesta(
-            "Consulta no comprendida",
-            "aclaracion",
-            "No pude identificar la consulta. Prueba indicando 'de [origen] a [destino]' o el código de la ruta.",
-        )
-    interpretacion = _aplicar_contexto(interpretacion, datos.contexto)
-
-    intencion = interpretacion.get("intencion")
-    origen = interpretacion.get("origen")
-    destino = interpretacion.get("destino")
-    ruta_codigo = interpretacion.get("ruta_codigo")
-
-    if intencion == "SALUDO":
-        return _respuesta(
-            "Saludo",
-            "saludo",
-            "¡Hola! Puedo buscar rutas directas, rutas por lugar, horarios, frecuencias y tarifas.",
-            icono="👋",
-        )
-
-    if intencion == "RUTAS_POR_LUGAR":
-        if not destino:
-            return _respuesta(
-                "Lugar no especificado",
-                "aclaracion",
-                "Indica el lugar por donde quieres saber qué rutas pasan.",
-            )
-
-        resolucion = resolver_referencia(db, destino)
-        if resolucion["estado"] == "AMBIGUO":
-            return _respuesta_ambigua(destino, "lugar", resolucion)
-        if resolucion["estado"] == "NO_ENCONTRADO":
-            return _respuesta(
-                "Lugar no reconocido",
-                "aclaracion",
-                f"No reconocí el lugar '{destino}'. Prueba con otro nombre o una referencia cercana.",
-            )
-
-        resultados = _rutas_por_ubicaciones(db, resolucion["ubicaciones"])
-        if not resultados:
-            return _respuesta(
-                "Sin rutas",
-                "sin_resultados",
-                f"No encontré rutas que pasen por '{destino}'.",
-            )
-
-        opciones = ", ".join(f"{r['codigo_ruta']} ({r['sentido']})" for r in resultados)
-        return _respuesta(
-            f"Rutas por lugar: {len(resultados)}",
-            "rutas_por_lugar",
-            f"Encontré {len(resultados)} opciones que pasan por '{destino}': {opciones}.",
-            resultados,
-        )
-
-    if intencion in ("HORARIO", "FRECUENCIA", "TARIFA", "PROXIMA_UNIDAD"):
-        if not ruta_codigo:
-            etiqueta = {
-                "HORARIO": "el horario",
-                "FRECUENCIA": "la frecuencia",
-                "TARIFA": "la tarifa",
-                "PROXIMA_UNIDAD": "la próxima salida teórica",
-            }[intencion]
-            return _respuesta(
-                "Indica una ruta",
-                "aclaracion",
-                f"Indica el código de la ruta para consultar {etiqueta}. Por ejemplo: '{etiqueta} de la ruta 05'.",
-                intencion_solicitada=intencion,
-            )
-
-        codigos = resolver_codigos_ruta(db, ruta_codigo)
-        if not codigos:
-            canonico = normalizar_codigo_ruta(ruta_codigo) or str(ruta_codigo)
-            return _respuesta(
-                "Ruta no encontrada",
-                "error",
-                f"No encontré la ruta o familia {canonico}.",
-                icono="⚠️",
-            )
-
-        resultados = _datos_info_rutas(db, codigos, intencion)
-        nombres = ", ".join(codigos)
-        etiqueta = {
-            "HORARIO": "horario",
-            "FRECUENCIA": "frecuencia",
-            "TARIFA": "tarifa",
-            "PROXIMA_UNIDAD": "próxima salida teórica",
-        }[intencion]
-        return _respuesta(
-            f"{etiqueta.capitalize()}: {len(resultados)} ruta(s)",
-            "info",
-            f"Encontré información de {etiqueta} para: {nombres}.",
-            resultados,
-            intencion_solicitada=intencion,
-        )
-
-    if intencion != "BUSCAR_RUTA":
-        return _respuesta(
-            "Consulta no procesada",
-            "aclaracion",
-            "No pude identificar qué información necesitas.",
-        )
-
-    if not origen and not destino:
-        return _respuesta(
-            "Datos incompletos",
-            "aclaracion",
-            "Indica desde dónde partes y a dónde quieres ir. Por ejemplo: 'de Shudal a Hoyos Rubio'.",
-        )
-
-    if not origen:
-        resolucion = resolver_referencia(db, destino)
-        if resolucion["estado"] == "AMBIGUO":
-            return _respuesta_ambigua(destino, "destino", resolucion)
-        if resolucion["estado"] == "NO_ENCONTRADO":
-            return _respuesta(
-                "Destino no reconocido",
-                "aclaracion",
-                f"No reconocí el destino '{destino}'.",
-            )
-        nombre = _nombre_resuelto(destino, resolucion)
-        alternativas = _rutas_por_ubicaciones(db, resolucion["ubicaciones"])
-        if alternativas:
-            return _respuesta(
-                "Falta el origen",
-                "alternativas",
-                f"Entiendo que quieres ir a {nombre}. Estas rutas pasan por ahí. Si me dices desde dónde partes, puedo buscar una ruta directa.",
-                alternativas,
-                contexto=_contexto_busqueda(destino=nombre, pendiente="origen"),
-            )
-        return _respuesta(
-            "Falta el origen",
-            "aclaracion",
-            f"Entiendo que quieres ir a {nombre}. ¿Desde dónde partes?",
-            contexto=_contexto_busqueda(destino=nombre, pendiente="origen"),
-        )
-
-    if not destino:
-        resolucion = resolver_referencia(db, origen)
-        if resolucion["estado"] == "AMBIGUO":
-            return _respuesta_ambigua(origen, "origen", resolucion)
-        if resolucion["estado"] == "NO_ENCONTRADO":
-            return _respuesta("Origen no reconocido", "aclaracion", f"No reconocí el origen '{origen}'.")
-        nombre = _nombre_resuelto(origen, resolucion)
-        alternativas = _rutas_por_ubicaciones(db, resolucion["ubicaciones"])
-        if alternativas:
-            return _respuesta(
-                "Falta el destino",
-                "alternativas",
-                f"Entiendo que partes de {nombre}. Estas rutas pasan por ahí. ¿A dónde quieres ir para buscar una ruta directa?",
-                alternativas,
-                contexto=_contexto_busqueda(origen=nombre, pendiente="destino"),
-            )
-        return _respuesta(
-            "Falta el destino",
-            "aclaracion",
-            f"Entiendo que partes de {nombre}. ¿A dónde quieres ir?",
-            contexto=_contexto_busqueda(origen=nombre, pendiente="destino"),
-        )
-
-    resolucion_origen = resolver_referencia(db, origen)
-    resolucion_destino = resolver_referencia(db, destino)
-    if resolucion_origen["estado"] == "AMBIGUO":
-        return _respuesta_ambigua(origen, "origen", resolucion_origen)
-    if resolucion_destino["estado"] == "AMBIGUO":
-        return _respuesta_ambigua(destino, "destino", resolucion_destino)
-    if resolucion_origen["estado"] == "NO_ENCONTRADO":
-        return _respuesta("Origen no reconocido", "aclaracion", f"No reconocí el origen '{origen}'.")
-    if resolucion_destino["estado"] == "NO_ENCONTRADO":
-        return _respuesta("Destino no reconocido", "aclaracion", f"No reconocí el destino '{destino}'.")
-
-    encontrados = []
-    vistos = set()
-    for ubicacion_origen in resolucion_origen["ubicaciones"]:
-        for ubicacion_destino in resolucion_destino["ubicaciones"]:
-            for ruta in buscar_ruta(db, ubicacion_origen["oficial"], ubicacion_destino["oficial"]):
-                clave = (ruta["codigo"], ruta["sentido"])
-                if clave not in vistos:
-                    vistos.add(clave)
-                    encontrados.append(ruta)
-
-    if not encontrados:
-        nombre_origen = _nombre_resuelto(origen, resolucion_origen)
-        nombre_destino = _nombre_resuelto(destino, resolucion_destino)
-        alternativas = _rutas_por_ubicaciones(db, resolucion_destino["ubicaciones"])
-        if alternativas:
-            return _respuesta(
-                "Sin ruta directa",
-                "alternativas",
-                f"No encontré una ruta directa desde {nombre_origen} hasta {nombre_destino}. Estas rutas sí pasan por el destino; con los datos actuales no puedo confirmar el tramo completo desde tu origen.",
-                alternativas,
-                contexto=_contexto_busqueda(origen=nombre_origen, destino=nombre_destino),
-            )
-        return _respuesta(
-            "Sin rutas directas",
-            "sin_resultados",
-            f"No encontré una ruta directa para ir desde {origen} hasta {destino}.",
-            contexto=_contexto_busqueda(
-                origen=_nombre_resuelto(origen, resolucion_origen),
-                destino=_nombre_resuelto(destino, resolucion_destino),
-            ),
-        )
-
-    resultados = []
-    for ruta in encontrados:
-        frecuencia = int(ruta["frecuencia_min"]) if ruta.get("frecuencia_min") is not None else None
-        calculo = calcular_proxima_unidad(
-            ruta.get("horario_inicio"), ruta.get("horario_fin"), frecuencia
-        )
-        puntos = [
-            {"nombre": punto.get("nombre", ""), "orden": punto.get("orden", indice)}
-            for indice, punto in enumerate(ruta.get("camino", []))
-        ]
-        resultados.append({
-            "codigo_ruta": ruta["codigo"],
-            "sentido": ruta["sentido"],
-            "nombre_comercial": ruta.get("nombre_comercial") or ruta.get("razon_social") or "",
-            "razon_social": ruta.get("razon_social") or "",
-            "ruc": ruta.get("ruc") or "",
-            "origen": ruta["origen"].get("nombre", ""),
-            "destino": ruta["destino"].get("nombre", ""),
-            "distancia_total_ruta_km": round(float(ruta["distancia_km"]), 2) if ruta.get("distancia_km") is not None else None,
-            "tiempo_total_ruta_min": ruta.get("tiempo_total_min"),
-            "frecuencia_min": frecuencia,
-            "horario": f"{ruta.get('horario_inicio')} - {ruta.get('horario_fin')}" if ruta.get("horario_inicio") and ruta.get("horario_fin") else None,
-            "horario_inicio": ruta.get("horario_inicio") or None,
-            "horario_fin": ruta.get("horario_fin") or None,
-            "tarifa_general": float(ruta["tarifa_general"]) if ruta.get("tarifa_general") is not None else None,
-            "tarifa_medio_pasaje": float(ruta["tarifa_medio_pasaje"]) if ruta.get("tarifa_medio_pasaje") is not None else None,
-            "estado_servicio": calculo["estado"],
-            "proxima_salida": calculo["proxima_salida"],
-            "proximo_paso_min": calculo["minutos_restantes"],
-            "mensaje_servicio": calculo["mensaje"],
-            "puntos": puntos,
-        })
-
-    return _respuesta(
-        f"Rutas directas encontradas: {len(resultados)}",
-        "ruta",
-        generar_respuesta(consulta, resultados),
-        resultados,
-        contexto={},
-    )
+    return assistant_service.consultar(db, datos)
 
 
 if __name__ == "__main__":

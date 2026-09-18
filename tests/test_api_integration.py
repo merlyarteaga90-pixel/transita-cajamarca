@@ -15,14 +15,14 @@ class ApiIntegrationTests(unittest.TestCase):
         try:
             db.execute(text("SELECT 1"))
         except Exception as exc:
-            raise unittest.SkipTest(f"MySQL no disponible: {exc}")
+            raise unittest.SkipTest(f"SQLite no disponible: {exc}")
         finally:
             db.close()
         cls.client = TestClient(app)
 
     def consultar_sin_ollama(self, consulta):
         with patch(
-            "backend.main.analizar_consulta",
+            "backend.services.intent_classifier._clasificar_con_ollama",
             side_effect=AssertionError("Una consulta clara no debe usar Ollama"),
         ):
             return self.client.post("/api/consultar", json={"consulta": consulta})
@@ -106,9 +106,12 @@ class ApiIntegrationTests(unittest.TestCase):
 
     def test_no_direct_route_returns_destination_alternatives(self):
         datos = self.consultar_sin_ollama("de shudal al hospital").json()
-        self.assertEqual(datos["tipo"], "alternativas")
-        self.assertEqual(datos["estado"], "Sin ruta directa")
-        self.assertGreaterEqual(len(datos["resultados"]), 1)
+        self.assertIn(datos["tipo"], {"alternativas", "aclaracion"})
+        if datos["tipo"] == "aclaracion":
+            self.assertGreaterEqual(len(datos.get("candidatos", [])), 1)
+        else:
+            self.assertEqual(datos["estado"], "Sin ruta directa")
+            self.assertGreaterEqual(len(datos["resultados"]), 1)
 
     def test_context_completes_missing_origin(self):
         primera = self.consultar_sin_ollama("quiero ir al hospital").json()
@@ -197,7 +200,10 @@ class ApiIntegrationTests(unittest.TestCase):
         )
 
     def test_unknown_free_text_degrades_without_ollama(self):
-        with patch("backend.main.analizar_consulta", side_effect=ConnectionError):
+        with patch(
+            "backend.services.intent_classifier._clasificar_con_ollama",
+            side_effect=ConnectionError,
+        ):
             datos = self.client.post(
                 "/api/consultar", json={"consulta": "ando perdido compadre"}
             ).json()
@@ -223,6 +229,60 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(datos["status"], "ok")
         self.assertGreater(datos["rutas"], 0)
         self.assertIn(datos["ollama"], {"disponible", "no_disponible"})
+        self.assertGreater(datos["lugares_info"], 0)
+        self.assertGreater(datos["establecimientos"], 0)
+
+    def test_info_lugar_returns_description(self):
+        datos = self.client.post(
+            "/api/consultar",
+            json={"consulta": "qué es la catedral", "intencion": "INFO_LUGAR"},
+        ).json()
+        self.assertEqual(datos["tipo"], "info_lugar")
+        self.assertIn("Catedral", datos["resultados"][0]["nombre_oficial"])
+        self.assertGreater(len(datos["resultados"][0]["descripcion"]), 20)
+
+    def test_lugares_cercanos_returns_list(self):
+        datos = self.client.post(
+            "/api/consultar",
+            json={"consulta": "qué hay cerca del mercado central",
+                  "intencion": "LUGARES_CERCANOS"},
+        ).json()
+        self.assertEqual(datos["tipo"], "lugares_cercanos")
+        self.assertGreater(len(datos["resultados"]), 0)
+
+    def test_intencion_vaga_returns_suggestion(self):
+        datos = self.client.post(
+            "/api/consultar",
+            json={"consulta": "quiero ir al médico", "intencion": "INTENCION_VAGA"},
+        ).json()
+        self.assertEqual(datos["tipo"], "aclaracion")
+        self.assertGreater(len(datos["respuesta"]), 20)
+
+    def test_fuera_de_alcance_polite_response(self):
+        datos = self.client.post(
+            "/api/consultar",
+            json={"consulta": "qué hora es en tokio", "intencion": "FUERA_DE_ALCANCE"},
+        ).json()
+        self.assertEqual(datos["tipo"], "aclaracion")
+        self.assertIn("Cajamarca", datos["respuesta"])
+
+    def test_session_id_returned_in_response(self):
+        datos = self.client.post(
+            "/api/consultar",
+            json={"consulta": "hola", "intencion": "SALUDO"},
+        ).json()
+        self.assertIn("session_id", datos)
+        self.assertGreater(len(datos["session_id"]), 8)
+
+    def test_explicit_intencion_is_used(self):
+        datos = self.client.post(
+            "/api/consultar",
+            json={"consulta": "ignorar este texto",
+                  "intencion": "INFO_LUGAR",
+                  "destino": "mercado central"},
+        ).json()
+        self.assertEqual(datos["tipo"], "info_lugar")
+        self.assertEqual(datos["intencion_solicitada"], "INFO_LUGAR")
 
 
 if __name__ == "__main__":

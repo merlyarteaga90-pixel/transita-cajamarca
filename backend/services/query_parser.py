@@ -45,6 +45,47 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
     if re.fullmatch(r"(?:hola|buenas|buenos dias|buenas tardes|buenas noches|gracias|chau|adios)[!. ]*", simple):
         return {"intencion": "SALUDO", "origen": None, "destino": None, "ruta_codigo": None}
 
+    if re.fullmatch(r"(?:chau|adios|hasta luego|nos vemos|bye)[!. ]*", simple):
+        return {"intencion": "DESPEDIDA", "origen": None, "destino": None, "ruta_codigo": None}
+
+    info_lugar = re.match(
+        r"^(?:qu[eé]\s+es|qu[eé]\s+hay\s+en|d[oó]nde\s+(?:queda|es)|sobre)\s+(?!la\s+ruta|r\s*-?\s*\d)(.+?)[?.!]*$",
+        original,
+        re.IGNORECASE,
+    )
+    if info_lugar:
+        return {
+            "intencion": "INFO_LUGAR",
+            "origen": None,
+            "destino": _limpiar_lugar(info_lugar.group(1)),
+            "ruta_codigo": None,
+        }
+
+    lugares_cercanos = re.match(
+        r"^(?:qu[eé]\s+hay\s+cerca\s+(?:d[ea]l?)?|cerca\s+de|negocios\s+cerca\s+de|bancos\s+cerca\s+de|restaurantes\s+cerca\s+de|farmacias?\s+cerca\s+de)\s+(.+?)[?.!]*$",
+        original,
+        re.IGNORECASE,
+    )
+    if lugares_cercanos:
+        return {
+            "intencion": "LUGARES_CERCANOS",
+            "origen": None,
+            "destino": _limpiar_lugar(lugares_cercanos.group(1)),
+            "ruta_codigo": None,
+        }
+
+    fuera = re.match(
+        r"^(?:qu[eé]\s+hora\s+es\s+en|clima\s+en|cu[aá]ntos?\s+habitantes|qu[eé]\s+idiomas?\s+se\s+habla|cu[aá]nto\s+falta\s+para\s+navidad)",
+        simple,
+    )
+    if fuera:
+        return {
+            "intencion": "FUERA_DE_ALCANCE",
+            "origen": None,
+            "destino": None,
+            "ruta_codigo": None,
+        }
+
     intenciones_ruta = (
         ("HORARIO", r"\b(?:horario|hora|a que hora)\b"),
         ("FRECUENCIA", r"\b(?:frecuencia|cada cuanto|cada que tiempo)\b"),

@@ -78,3 +78,23 @@ CREATE INDEX IF NOT EXISTS idx_rutas_codigo ON rutas (codigo);
 CREATE INDEX IF NOT EXISTS idx_empresas_ruc ON empresas (ruc);
 CREATE INDEX IF NOT EXISTS idx_alias_referencia ON lugares_alias (referencia_normalizada);
 CREATE INDEX IF NOT EXISTS idx_alias_ubicacion ON lugares_alias (ubicacion_normalizada);
+
+CREATE TABLE IF NOT EXISTS lugares_info (
+    nombre_oficial TEXT PRIMARY KEY,
+    descripcion TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    categoria TEXT,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS establecimientos_cercanos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lugar_referencia TEXT NOT NULL,
+    nombre TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    direccion TEXT,
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_establecimientos_lugar ON establecimientos_cercanos (lugar_referencia);
+CREATE INDEX IF NOT EXISTS idx_info_tipo ON lugares_info (tipo);

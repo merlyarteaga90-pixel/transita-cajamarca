@@ -1,4 +1,4 @@
-import type { ApiRoute } from './types';
+import type { ApiRoute } from '../api/types';
 
 export function hasValue(value: unknown): boolean {
   if (value === null || value === undefined) return false;
@@ -19,11 +19,11 @@ export function withUnit(value: unknown, unit: string, prefix = ''): string {
 }
 
 export function formatSchedule(route: ApiRoute): string {
-  const schedule = safeText(route?.horario);
+  const schedule = safeText(route.horario);
   if (schedule) return schedule;
 
-  const start = safeText(route?.horario_inicio);
-  const end = safeText(route?.horario_fin);
+  const start = safeText(route.horario_inicio);
+  const end = safeText(route.horario_fin);
   if (start && end) return `${start} - ${end}`;
   if (start) return `Desde ${start}`;
   if (end) return `Hasta ${end}`;
@@ -44,6 +44,14 @@ export function routeCode(route: ApiRoute): string {
   return safeText(route.codigo_ruta ?? route.codigo ?? route.ruta, 'Ruta');
 }
 
+export function routeName(route: ApiRoute): string {
+  return safeText(route.nombre_comercial ?? route.nombre ?? route.ruta_nombre ?? route.razon_social);
+}
+
+export function routeBusinessName(route: ApiRoute): string {
+  return safeText(route.razon_social);
+}
+
 export function routeDirection(route: ApiRoute): string {
   return safeText(route.sentido ?? route.tipo);
 }
@@ -55,7 +63,9 @@ export function routePath(route: ApiRoute): string {
 }
 
 export function asRoutes(value: unknown): ApiRoute[] {
-  return Array.isArray(value) ? value.filter((item): item is ApiRoute => Boolean(item) && typeof item === 'object') : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is ApiRoute => Boolean(item) && typeof item === 'object')
+    : [];
 }
 
 export function candidateText(candidate: unknown): string {
@@ -64,7 +74,9 @@ export function candidateText(candidate: unknown): string {
 
   const item = candidate as ApiRoute;
   const code = safeText(item.codigo_ruta ?? item.codigo ?? item.ruta);
-  const name = safeText(item.nombre ?? item.punto ?? item.nombre_comercial ?? item.razon_social);
+  const name = safeText(
+    item.nombre_comercial ?? item.nombre ?? item.punto ?? item.razon_social ?? item.ruta_nombre
+  );
   if (code && name && code !== name) return `${code} - ${name}`;
   return code || name;
 }

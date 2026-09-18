@@ -1,0 +1,45 @@
+/* frontend/src/styles/components.css
+   Estilos específicos de componentes React.
+   Las clases base del diseño viven en globals.css. */
+
+/* SearchBox */
+.searchbox-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.location-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f2edf7;
+  border: 1px solid #ddd1ea;
+  color: #5c4a85;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.location-button:hover {
+  background: #e7daf7;
+  border-color: #cfc0e1;
+}
+
+.location-error {
+  color: var(--color-error);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ResponsePanel: contenedor de selector de rutas */
+.selector-rutas {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

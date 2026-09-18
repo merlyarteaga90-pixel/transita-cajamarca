@@ -9,9 +9,14 @@ El frontend está construido con Svelte + Vite y se sirve desde FastAPI usando e
 - Búsqueda de rutas directas entre dos referencias.
 - Tolerancia a alias, tildes, abreviaturas y errores comunes.
 - Listado de todas las rutas y sentidos que pasan por un lugar.
+- Información descriptiva de lugares turísticos, educativos, religiosos, de salud y comerciales.
+- Establecimientos cercanos (bancos, restaurantes, farmacias) por lugar de referencia.
 - Horarios, frecuencias, tarifas y salida teórica por ruta.
 - Familias de ruta: `ruta 03` devuelve `R-03-1` y `R-03-2`.
-- Cards para recorridos, rutas por lugar e información de rutas.
+- Clasificación de intención vía Ollama (con parser determinista de fallback).
+- Sugerencias ante consultas vagas (ej. "quiero ir al médico").
+- Manejo de "fuera de alcance" para consultas no relacionadas.
+- Contexto conversacional (4-5 turnos).
 - Lista de candidatos cuando un lugar es ambiguo.
 - Funcionamiento principal aunque Ollama no esté disponible.
 
@@ -49,12 +54,15 @@ OLLAMA_TIMEOUT=4
 
 ## Base de datos
 
-Crear la base y cargar los datos:
+Inicializar y cargar datos (crea la base si no existe):
 
 ```powershell
-sqlite3 transita_cajamarca.db < database/00_schema.sql
-sqlite3 transita_cajamarca.db < database/01_seed.sql
+python -m backend.init_db
+python -m backend.init_db --reset
 ```
+
+Carga en orden: `database/00_schema.sql`, `01_seed.sql`, `02_info_lugares.sql`, `03_establecimientos_cercanos.sql`.
+El flag `--reset` elimina el archivo de DB antes de cargar.
 
 ## Ollama opcional
 
