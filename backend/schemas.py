@@ -23,6 +23,8 @@ Intencion = Literal[
 class UserLocation(BaseModel):
     lat: float
     lon: float
+    accuracy_m: float | None = None
+    captured_at: str | None = None
 
 
 class ConsultaRequest(BaseModel):

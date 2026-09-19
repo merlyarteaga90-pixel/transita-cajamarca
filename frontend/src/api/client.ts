@@ -23,7 +23,12 @@ export type ConsultarRequest = {
   intencion?: string;
   ruta_codigo?: string;
   contexto?: ConversationContext;
-  user_location?: { lat: number; lon: number };
+  user_location?: {
+    lat: number;
+    lon: number;
+    accuracy_m?: number;
+    captured_at?: string;
+  };
   session_id?: string;
 };
 

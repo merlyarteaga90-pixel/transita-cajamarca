@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import type { GeolocationStatus } from '../hooks/useGeolocation';
 
 export type SearchBoxHandle = {
   focus: () => void;
@@ -11,11 +12,22 @@ export type SearchBoxProps = {
   onSubmit: (value: string) => void;
   onClear: () => void;
   onRequestLocation?: () => void;
+  onClearLocation?: () => void;
+  locationStatus?: GeolocationStatus;
   locationError?: string | null;
 };
 
+const LOCATION_LABELS: Record<GeolocationStatus, { text: string; title: string }> = {
+  idle: { text: '📍 Compartir ubicación', title: 'Usar mi ubicación para recomendar rutas cercanas' },
+  requesting: { text: '⏳ Obteniendo ubicación…', title: 'Solicitando permiso de ubicación' },
+  active: { text: '📍 Compartiendo ubicación', title: 'Dejar de compartir ubicación' },
+  denied: { text: '❌ Permiso denegado · Reintentar', title: 'Intentar nuevamente' },
+  unavailable: { text: '❌ No disponible · Reintentar', title: 'Intentar nuevamente' },
+  timeout: { text: '⏱️ Tiempo agotado · Reintentar', title: 'Intentar nuevamente' },
+};
+
 export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>(function SearchBox(
-  { value, loading, onChange, onSubmit, onClear, onRequestLocation, locationError },
+  { value, loading, onChange, onSubmit, onClear, onRequestLocation, onClearLocation, locationStatus, locationError },
   ref
 ) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -43,6 +55,19 @@ export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>(function Se
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       submit();
+    }
+  }
+
+  const status = locationStatus || 'idle';
+  const label = LOCATION_LABELS[status];
+  const isActive = status === 'active';
+  const isRequesting = status === 'requesting';
+
+  function handleLocationClick(): void {
+    if (isActive && onClearLocation) {
+      onClearLocation();
+    } else if (onRequestLocation) {
+      onRequestLocation();
     }
   }
 
@@ -77,14 +102,16 @@ export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>(function Se
           Presiona <kbd>Enter ↵</kbd> para enviar
         </span>
         <div className="searchbox-actions">
-          {onRequestLocation && (
+          {(onRequestLocation || onClearLocation) && (
             <button
               type="button"
-              className="location-button"
-              title="Compartir ubicación"
-              onClick={onRequestLocation}
+              className={`location-button ${isActive ? 'location-active' : ''}`}
+              title={label.title}
+              onClick={handleLocationClick}
+              disabled={isRequesting}
+              aria-pressed={isActive}
             >
-              <span>📍 Compartir ubicación</span>
+              <span>{label.text}</span>
             </button>
           )}
           <button id="btnBuscar" type="button" disabled={loading} onClick={submit}>
@@ -104,6 +131,11 @@ export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>(function Se
           </button>
         </div>
       </div>
+      {isActive && (
+        <p className="location-privacy">
+          Se usa para recomendar rutas cercanas. No se guarda.
+        </p>
+      )}
     </section>
   );
 });

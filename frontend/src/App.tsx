@@ -26,7 +26,7 @@ export function App() {
   const copyTimerRef = useRef<number | null>(null);
 
   const { loading, startRequest, finishRequest, reset } = useAbortController();
-  const { location, error: locationError, request: requestLocation } = useGeolocation();
+  const { location, status: locationStatus, error: locationError, request: requestLocation, clear: clearLocation } = useGeolocation();
   const { sessionId } = useSession();
 
   const voiceText = useMemo(
@@ -58,10 +58,19 @@ export function App() {
       setResponse(null);
 
       try {
+        const userLocation = location
+          ? {
+              lat: location.lat,
+              lon: location.lon,
+              accuracy_m: location.accuracy,
+              captured_at: location.capturedAt,
+            }
+          : undefined;
+
         const data = await consultRoute({
           consulta,
           contexto: conversationContext,
-          user_location: location ?? undefined,
+          user_location: userLocation,
           session_id: sessionId
         }, request.signal);
 
@@ -169,6 +178,8 @@ export function App() {
           onSubmit={handleSubmit}
           onClear={handleClear}
           onRequestLocation={requestLocation}
+          onClearLocation={clearLocation}
+          locationStatus={locationStatus}
           locationError={locationError}
         />
         <QuickActions onOpenRoutes={() => setModalOpen(true)} onExample={handleExample} />
