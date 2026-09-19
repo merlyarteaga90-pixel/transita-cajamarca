@@ -1,7 +1,6 @@
 from pathlib import Path
 import os
 import sys
-from urllib.request import urlopen
 
 RAIZ_PROYECTO = str(Path(__file__).resolve().parent.parent)
 if RAIZ_PROYECTO not in sys.path:

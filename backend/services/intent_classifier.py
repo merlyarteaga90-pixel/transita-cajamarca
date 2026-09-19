@@ -113,14 +113,17 @@ def clasificar_consulta(consulta: str) -> dict:
             logger.info("Clasificador determinista: %s", normalizado["intencion"])
             return normalizado
 
-    gemini_result = _clasificar_con_gemini(consulta)
-    if gemini_result is not None:
-        logger.info(
-            "Clasificador Gemini: %s (confianza %.2f)",
-            gemini_result["intencion"],
-            gemini_result["confianza"],
-        )
-        return gemini_result
+    try:
+        gemini_result = _clasificar_con_gemini(consulta)
+        if gemini_result is not None:
+            logger.info(
+                "Clasificador Gemini: %s (confianza %.2f)",
+                gemini_result["intencion"],
+                gemini_result["confianza"],
+            )
+            return gemini_result
+    except Exception as exc:
+        logger.warning("Clasificador Gemini falló inesperadamente: %s", exc)
 
     logger.info("Clasificador: fallback a INTENCION_VAGA")
     return dict(_intencion_vaga)

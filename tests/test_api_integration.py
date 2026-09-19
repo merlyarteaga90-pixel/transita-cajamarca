@@ -20,15 +20,15 @@ class ApiIntegrationTests(unittest.TestCase):
             db.close()
         cls.client = TestClient(app)
 
-    def consultar_sin_ollama(self, consulta):
+    def consultar_sin_gemini(self, consulta):
         with patch(
-            "backend.services.intent_classifier._clasificar_con_ollama",
-            side_effect=AssertionError("Una consulta clara no debe usar Ollama"),
+            "backend.services.intent_classifier._clasificar_con_gemini",
+            side_effect=AssertionError("Una consulta clara no debe usar Gemini"),
         ):
             return self.client.post("/api/consultar", json={"consulta": consulta})
 
     def test_route_family_returns_all_variants(self):
-        respuesta = self.consultar_sin_ollama("Horario de la ruta 03")
+        respuesta = self.consultar_sin_gemini("Horario de la ruta 03")
         self.assertEqual(respuesta.status_code, 200)
         datos = respuesta.json()
         self.assertEqual(datos["tipo"], "info")
@@ -38,12 +38,12 @@ class ApiIntegrationTests(unittest.TestCase):
         )
 
     def test_exact_variant_returns_one_card(self):
-        datos = self.consultar_sin_ollama("Horario de la ruta 03-1").json()
+        datos = self.consultar_sin_gemini("Horario de la ruta 03-1").json()
         self.assertEqual(len(datos["resultados"]), 1)
         self.assertEqual(datos["resultados"][0]["codigo_ruta"], "R-03-1")
 
     def test_routes_by_place_preserves_directions(self):
-        datos = self.consultar_sin_ollama("¿Qué rutas pasan por Shudal?").json()
+        datos = self.consultar_sin_gemini("¿Qué rutas pasan por Shudal?").json()
         self.assertEqual(datos["tipo"], "rutas_por_lugar")
         sentidos = {
             ruta["sentido"]
@@ -54,14 +54,14 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertTrue(all("nombre_comercial" in r for r in datos["resultados"]))
 
     def test_direct_route(self):
-        datos = self.consultar_sin_ollama(
+        datos = self.consultar_sin_gemini(
             "Estoy en Shudal y quiero ir a Hoyos Rubio"
         ).json()
         self.assertEqual(datos["tipo"], "ruta")
         self.assertGreaterEqual(len(datos["resultados"]), 1)
 
     def test_informal_references_are_understood(self):
-        datos = self.consultar_sin_ollama(
+        datos = self.consultar_sin_gemini(
             "como voy de el milagro a los baños del inca"
         ).json()
         self.assertIn(datos["tipo"], {"ruta", "sin_resultados", "aclaracion"})
@@ -73,18 +73,18 @@ class ApiIntegrationTests(unittest.TestCase):
         ]
         for consulta in consultas:
             with self.subTest(consulta=consulta):
-                datos = self.consultar_sin_ollama(consulta).json()
+                datos = self.consultar_sin_gemini(consulta).json()
                 self.assertIn(datos["tipo"], {"ruta", "alternativas", "sin_resultados"})
 
     def test_informal_routes_by_place(self):
-        datos = self.consultar_sin_ollama(
+        datos = self.consultar_sin_gemini(
             "q rutas pasan x hoyos rubios"
         ).json()
         self.assertEqual(datos["tipo"], "rutas_por_lugar")
         self.assertGreaterEqual(len(datos["resultados"]), 1)
 
     def test_destination_only_requests_origin(self):
-        datos = self.consultar_sin_ollama(
+        datos = self.consultar_sin_gemini(
             "Quiero ir a las pozas termales"
         ).json()
         self.assertIn(datos["tipo"], {"aclaracion", "alternativas"})
@@ -92,7 +92,7 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(datos["contexto"]["pendiente"], "origen")
 
     def test_destination_only_can_show_alternatives(self):
-        datos = self.consultar_sin_ollama("como voy a shudal").json()
+        datos = self.consultar_sin_gemini("como voy a shudal").json()
         self.assertEqual(datos["tipo"], "alternativas")
         self.assertEqual(datos["estado"], "Falta el origen")
         self.assertGreaterEqual(len(datos["resultados"]), 1)
@@ -100,12 +100,12 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(datos["contexto"]["pendiente"], "origen")
 
     def test_natural_destination_query_does_not_use_rutas_as_origin(self):
-        datos = self.consultar_sin_ollama("rutas para ir a shudal").json()
+        datos = self.consultar_sin_gemini("rutas para ir a shudal").json()
         self.assertEqual(datos["tipo"], "alternativas")
         self.assertNotIn("origen 'rutas'", datos["respuesta"].lower())
 
     def test_no_direct_route_returns_destination_alternatives(self):
-        datos = self.consultar_sin_ollama("de shudal al hospital").json()
+        datos = self.consultar_sin_gemini("de shudal al hospital").json()
         self.assertIn(datos["tipo"], {"alternativas", "aclaracion"})
         if datos["tipo"] == "aclaracion":
             self.assertGreaterEqual(len(datos.get("candidatos", [])), 1)
@@ -114,7 +114,7 @@ class ApiIntegrationTests(unittest.TestCase):
             self.assertGreaterEqual(len(datos["resultados"]), 1)
 
     def test_context_completes_missing_origin(self):
-        primera = self.consultar_sin_ollama("quiero ir al hospital").json()
+        primera = self.consultar_sin_gemini("quiero ir al hospital").json()
         segunda = self.client.post(
             "/api/consultar",
             json={"consulta": "desde shudal", "contexto": primera["contexto"]},
@@ -123,7 +123,7 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertIn(segunda["tipo"], {"ruta", "alternativas", "sin_resultados"})
 
     def test_vague_trip_requests_both_places(self):
-        datos = self.consultar_sin_ollama("Quiero ir").json()
+        datos = self.consultar_sin_gemini("Quiero ir").json()
         self.assertEqual(datos["tipo"], "aclaracion")
         self.assertEqual(datos["estado"], "Datos incompletos")
 
@@ -134,7 +134,7 @@ class ApiIntegrationTests(unittest.TestCase):
         ]
         for consulta, intencion, codigo in casos:
             with self.subTest(consulta=consulta):
-                datos = self.consultar_sin_ollama(consulta).json()
+                datos = self.consultar_sin_gemini(consulta).json()
                 self.assertEqual(datos["tipo"], "info")
                 self.assertEqual(datos["intencion_solicitada"], intencion)
                 self.assertEqual(datos["resultados"][0]["codigo_ruta"], codigo)
@@ -148,7 +148,7 @@ class ApiIntegrationTests(unittest.TestCase):
         ]
         for consulta in casos:
             with self.subTest(consulta=consulta):
-                datos = self.consultar_sin_ollama(consulta).json()
+                datos = self.consultar_sin_gemini(consulta).json()
                 self.assertEqual(datos["tipo"], "info")
                 self.assertEqual(datos["intencion_solicitada"], "PROXIMA_UNIDAD")
                 self.assertEqual(datos["resultados"][0]["codigo_ruta"], "R-05")
@@ -162,7 +162,7 @@ class ApiIntegrationTests(unittest.TestCase):
         ]
         for consulta, intencion in casos:
             with self.subTest(consulta=consulta):
-                datos = self.consultar_sin_ollama(consulta).json()
+                datos = self.consultar_sin_gemini(consulta).json()
                 self.assertEqual(datos["tipo"], "aclaracion")
                 self.assertEqual(datos["estado"], "Indica una ruta")
                 self.assertEqual(datos["intencion_solicitada"], intencion)
@@ -201,7 +201,7 @@ class ApiIntegrationTests(unittest.TestCase):
 
     def test_unknown_free_text_degrades_without_ollama(self):
         with patch(
-            "backend.services.intent_classifier._clasificar_con_ollama",
+            "backend.services.intent_classifier._clasificar_con_gemini",
             side_effect=ConnectionError,
         ):
             datos = self.client.post(
@@ -210,7 +210,7 @@ class ApiIntegrationTests(unittest.TestCase):
         self.assertEqual(datos["tipo"], "aclaracion")
 
     def test_ambiguous_place_lists_candidates(self):
-        datos = self.consultar_sin_ollama(
+        datos = self.consultar_sin_gemini(
             "¿Qué rutas pasan por Plaza de Armas?"
         ).json()
         self.assertEqual(datos["tipo"], "aclaracion")
@@ -228,7 +228,7 @@ class ApiIntegrationTests(unittest.TestCase):
         datos = self.client.get("/api/health").json()
         self.assertEqual(datos["status"], "ok")
         self.assertGreater(datos["rutas"], 0)
-        self.assertIn(datos["ollama"], {"disponible", "no_disponible"})
+        self.assertIn(datos["gemini"], {"configurado", "no_configurado"})
         self.assertGreater(datos["lugares_info"], 0)
         self.assertGreater(datos["establecimientos"], 0)
 
