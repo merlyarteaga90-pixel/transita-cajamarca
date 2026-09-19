@@ -1,9 +1,9 @@
-"""Clasificador de intenciones: Ollama primary con parser determinista como fallback.
+"""Clasificador de intenciones: parser determinista primero, Gemini como secondary.
 
 Flujo:
 1. Parser determinista (rápido, ~ms) — cubre frases frecuentes.
-2. Si no se reconoce, Ollama con prompt corto (clasificación JSON).
-3. Si Ollama falla o devuelve algo inválido, fallback a INTENCION_VAGA.
+2. Si no se reconoce, Gemini con prompt corto (clasificación JSON).
+3. Si Gemini falla o no está configurado, fallback a INTENCION_VAGA.
 
 Este módulo NO decide qué hacer con la intención — solo clasifica.
 El dispatch ocurre en `assistant_service.py`.
@@ -16,7 +16,7 @@ import logging
 import re
 from pathlib import Path
 
-from backend.services.ollama_client import get_client, get_model
+from backend.services.gemini_client import classify_intent, is_configured
 from backend.services.query_parser import interpretar_consulta_clara
 
 
@@ -67,7 +67,7 @@ def _normalizar_codigo(codigo: str | None) -> str | None:
 
 
 def _normalizar_resultado(resultado: dict) -> dict | None:
-    """Valida y normaliza el resultado de Ollama o del parser determinista."""
+    """Valida y normaliza el resultado del parser o Gemini."""
     intencion = (resultado.get("intencion") or "").upper()
     if intencion not in _INTENCIONES_VALIDAS:
         logger.warning("Intención inválida devuelta: %s", intencion)
@@ -82,27 +82,18 @@ def _normalizar_resultado(resultado: dict) -> dict | None:
     }
 
 
-def _clasificar_con_ollama(consulta: str) -> dict | None:
-    """Llama a Ollama con el prompt corto de clasificación."""
+def _clasificar_con_gemini(consulta: str) -> dict | None:
+    """Llama a Gemini con el prompt de clasificación."""
+    if not is_configured():
+        return None
     try:
-        client = get_client()
         prompt_sistema = _cargar_prompt()
-
-        response = client.chat(
-            model=get_model(),
-            messages=[
-                {"role": "system", "content": prompt_sistema},
-                {"role": "user", "content": consulta},
-            ],
-            format="json",
-            options={"temperature": 0},
-        )
-
-        contenido = response["message"]["content"]
-        data = json.loads(contenido)
+        data = classify_intent(consulta, prompt_sistema)
+        if data is None:
+            return None
         return _normalizar_resultado(data)
     except Exception as exc:
-        logger.warning("Ollama falló al clasificar: %s", exc)
+        logger.warning("Gemini falló al clasificar: %s", exc)
         return None
 
 
@@ -122,15 +113,14 @@ def clasificar_consulta(consulta: str) -> dict:
             logger.info("Clasificador determinista: %s", normalizado["intencion"])
             return normalizado
 
-    try:
-        ollama_result = _clasificar_con_ollama(consulta)
-    except Exception as exc:
-        logger.warning("Ollama falló al clasificar (top-level): %s", exc)
-        ollama_result = None
-
-    if ollama_result is not None:
-        logger.info("Clasificador Ollama: %s (confianza %.2f)", ollama_result["intencion"], ollama_result["confianza"])
-        return ollama_result
+    gemini_result = _clasificar_con_gemini(consulta)
+    if gemini_result is not None:
+        logger.info(
+            "Clasificador Gemini: %s (confianza %.2f)",
+            gemini_result["intencion"],
+            gemini_result["confianza"],
+        )
+        return gemini_result
 
     logger.info("Clasificador: fallback a INTENCION_VAGA")
     return dict(_intencion_vaga)

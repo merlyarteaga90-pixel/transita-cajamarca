@@ -73,19 +73,14 @@ def health(db=Depends(get_db)):
             status_code=503, detail="Base de datos no disponible"
         ) from exc
 
-    ollama = "no_disponible"
-    try:
-        base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
-        with urlopen(f"{base_url}/api/tags", timeout=0.5) as respuesta:
-            if respuesta.status == 200:
-                ollama = "disponible"
-    except Exception:
-        pass
+    from backend.services.gemini_client import is_configured as gemini_configured
+
+    gemini = "configurado" if gemini_configured() else "no_configurado"
 
     return {
         "status": "ok" if rutas and puntos else "sin_datos",
-        "modo": "completo" if ollama == "disponible" else "degradado",
-        "ollama": ollama,
+        "modo": "completo" if gemini == "configurado" else "degradado",
+        "gemini": gemini,
         "empresas": empresas,
         "rutas": rutas,
         "sentidos": sentidos,

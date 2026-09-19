@@ -2,8 +2,8 @@
 
 Flujo:
 1. Recibe request del frontend.
-2. Si tiene intención explícita, la usa.
-3. Si no, clasifica la consulta (parser determinista → Ollama).
+2. Si tiene intención explícita, la usa directamente (sin llamar a IA).
+3. Si no, clasifica la consulta (parser determinista → Gemini).
 4. Aplica contexto conversacional (4-5 turnos).
 5. Despacha al handler correspondiente.
 6. Devuelve respuesta.
@@ -16,7 +16,6 @@ import re
 import uuid
 
 from backend.services import intent_classifier
-from backend.services.respuesta_generator import generar_respuesta_natural
 from backend.services.handlers import (
     buscar_ruta,
     info_lugar,
@@ -33,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 _PATRONES_LUGAR = [
     r"^(?:qu[eé]\s+es\s+|qu[eé]\s+hay\s+en\s+|d[oó]nde\s+(?:queda|es)\s+|informaci[oó]n\s+de\s+|sobre\s+)(.+?)[?.!]*$",
-    r"^(?:qu[eé]\s+hay\s+cerca\s+(?:d[ea]l?|de)\s+|cerca\s+de\s+|negocios\s+cerca\s+de\s+|bancos\s+cerca\s+de\s+|restaurantes\s+cerca\s+de\s+)(.+?)[?.!]*$",
+    r"^(?:qu[eé]\s+hay\s+cerca\s+(?:d[ea]l?|de)\s+|cerca\s+de\s+|negocios\s+cerca\s+de\s+|bancos\s+cerca\s+de\s+)(.+?)[?.!]*$",
 ]
 
 
@@ -133,26 +132,25 @@ def consultar(db, request) -> dict:
 
     intencion_explicita = getattr(request, "intencion", None)
 
-    entidades_clasificadas = intent_classifier.clasificar_consulta(consulta)
-
     if intencion_explicita:
+        # Si hay intención explícita, no llamamos a IA innecesariamente.
         destino = (
             getattr(request, "destino", None)
-            or entidades_clasificadas.get("destino")
             or _extraer_lugar_del_texto(consulta, intencion_explicita)
         )
         clasificacion = {
             "intencion": intencion_explicita,
-            "origen": getattr(request, "origen", None) or entidades_clasificadas.get("origen"),
+            "origen": getattr(request, "origen", None),
             "destino": destino,
             "ruta_codigo": (
                 str(getattr(request, "ruta_codigo", None))
                 if getattr(request, "ruta_codigo", None) is not None
-                else entidades_clasificadas.get("ruta_codigo")
+                else None
             ),
             "confianza": 1.0,
         }
     else:
+        entidades_clasificadas = intent_classifier.clasificar_consulta(consulta)
         clasificacion = entidades_clasificadas
 
     params = {
@@ -173,15 +171,6 @@ def consultar(db, request) -> dict:
     )
 
     respuesta = _dispatch(db, params["_intencion"], params)
-
-    if respuesta.get("tipo") in ("ruta", "alternativas", "rutas_por_lugar") and respuesta.get("resultados"):
-        prosa = generar_respuesta_natural(
-            consulta=consulta,
-            resultados=respuesta["resultados"],
-            contexto=respuesta.get("contexto") or contexto,
-        )
-        if prosa:
-            respuesta["respuesta"] = prosa
 
     respuesta["session_id"] = session_id
     respuesta["intencion_solicitada"] = params["_intencion"]
