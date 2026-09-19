@@ -3,8 +3,8 @@ export function LoadingState() {
     <section id="cargando" className="cargando">
       <div className="spinner-ia"></div>
       <div className="cargando-info">
-        <strong>Consultando itinerario...</strong>
-        <span>Consultando rutas y horarios...</span>
+        <strong>Analizando tu consulta...</strong>
+        <span>Clasificando intención y buscando rutas...</span>
       </div>
     </section>
   );

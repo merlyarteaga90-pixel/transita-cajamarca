@@ -12,6 +12,7 @@ export type ResponsePanelProps = {
   copied: boolean;
   onSpeak: () => void;
   onCopy: () => void;
+  onCandidateSelect?: (candidate: string) => void;
 };
 
 function candidateList(candidatos: unknown[]): string[] {
@@ -24,7 +25,14 @@ function candidateList(candidatos: unknown[]): string[] {
     .filter(Boolean);
 }
 
-export function ResponsePanel({ data, speaking, copied, onSpeak, onCopy }: ResponsePanelProps) {
+export function ResponsePanel({
+  data,
+  speaking,
+  copied,
+  onSpeak,
+  onCopy,
+  onCandidateSelect
+}: ResponsePanelProps) {
   const results = asRoutes(data.resultados);
   const selectorRoutes = asRoutes(data.rutas);
   const candidates = Array.isArray(data.candidatos) ? candidateList(data.candidatos) : [];
@@ -98,22 +106,51 @@ export function ResponsePanel({ data, speaking, copied, onSpeak, onCopy }: Respo
               ))}
             </div>
           ) : candidates.length ? (
-            <ul className="aclaracion-lista">
-              {candidates.map((candidate, index) => (
-                <li key={index}>{candidate}</li>
-              ))}
-            </ul>
+            <CandidateList candidates={candidates} onSelect={onCandidateSelect} />
           ) : null)}
 
         {data.tipo === 'aclaracion' && candidates.length > 0 && (
-          <ul className="aclaracion-lista">
-            {candidates.map((candidate, index) => (
-              <li key={index}>{candidate}</li>
-            ))}
-          </ul>
+          <CandidateList candidates={candidates} onSelect={onCandidateSelect} />
         )}
       </div>
     </section>
+  );
+}
+
+function CandidateList({
+  candidates,
+  onSelect
+}: {
+  candidates: string[];
+  onSelect?: (candidate: string) => void;
+}) {
+  if (!onSelect) {
+    return (
+      <ul className="aclaracion-lista">
+        {candidates.map((candidate, index) => (
+          <li key={index}>{candidate}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <div className="candidatos-bloque">
+      <span className="seccion-label">Elige una opción</span>
+      <div className="candidatos-grid">
+        {candidates.map((candidate, index) => (
+          <button
+            key={index}
+            type="button"
+            className="candidato-card"
+            onClick={() => onSelect(candidate)}
+          >
+            <span className="candidato-icono">📍</span>
+            <span className="candidato-texto">{candidate}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

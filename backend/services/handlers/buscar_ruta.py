@@ -32,10 +32,27 @@ def _nombre_resuelto(referencia: str, resolucion: dict) -> str:
     return ubicaciones[0]["oficial"] if len(ubicaciones) == 1 else referencia
 
 
+def _ubicaciones_desde_resolucion(resolucion: dict) -> list[dict]:
+    """Extrae ubicaciones oficiales tanto de resoluciones directas como ambiguas."""
+    ubicaciones = resolucion.get("ubicaciones", [])
+    if ubicaciones:
+        return ubicaciones
+
+    sugerencias = resolucion.get("sugerencias", [])
+    oficiales = []
+    vistas = set()
+    for sug in sugerencias:
+        oficial = sug.get("ubicacion") or sug.get("nombre")
+        if oficial and oficial not in vistas:
+            vistas.add(oficial)
+            oficiales.append({"oficial": oficial, "normalizada": oficial.lower()})
+    return oficiales
+
+
 def _candidatos_ambiguos(resolucion: dict) -> list[str]:
     candidatos = []
     for sugerencia in resolucion.get("sugerencias", []):
-        nombre = sugerencia.get("nombre") or sugerencia.get("ubicacion")
+        nombre = sugerencia.get("ubicacion") or sugerencia.get("nombre")
         if nombre and nombre not in candidatos:
             candidatos.append(nombre)
     return candidatos[:5]
@@ -46,7 +63,7 @@ def _respuesta_ambigua(referencia: str, rol: str, resolucion: dict) -> dict:
     return respuesta(
         f"{rol.capitalize()} ambiguo",
         "aclaracion",
-        f"'{referencia}' puede referirse a varios lugares. Escribe el nombre completo.",
+        f"'{referencia}' puede referirse a varios lugares. Elegí una opción o escribí el nombre completo.",
         candidatos=candidatos,
     )
 
@@ -75,8 +92,6 @@ def handle_buscar_ruta(db, params: dict) -> dict:
 
     if not origen:
         resolucion = resolver_referencia(db, destino)
-        if resolucion["estado"] == "AMBIGUO":
-            return _respuesta_ambigua(destino, "destino", resolucion)
         if resolucion["estado"] == "NO_ENCONTRADO":
             return respuesta(
                 "Destino no reconocido",
@@ -84,7 +99,9 @@ def handle_buscar_ruta(db, params: dict) -> dict:
                 f"No reconocí el destino '{destino}'.",
             )
         nombre = _nombre_resuelto(destino, resolucion)
-        alternativas = _rutas_por_ubicaciones(db, resolucion["ubicaciones"])
+        ubicaciones = _ubicaciones_desde_resolucion(resolucion)
+        alternativas = _rutas_por_ubicaciones(db, ubicaciones)
+        candidatos = _candidatos_ambiguos(resolucion) if resolucion["estado"] == "AMBIGUO" else []
         if alternativas:
             return respuesta(
                 "Falta el origen",
@@ -92,12 +109,14 @@ def handle_buscar_ruta(db, params: dict) -> dict:
                 f"Entiendo que quieres ir a {nombre}. Estas rutas pasan por ahí. "
                 "Si me dices desde dónde partes, puedo buscar una ruta directa.",
                 resultados=alternativas,
+                candidatos=candidatos,
                 contexto=_contexto_busqueda(destino=nombre, pendiente="origen"),
             )
         return respuesta(
             "Falta el origen",
             "aclaracion",
             f"Entiendo que quieres ir a {nombre}. ¿Desde dónde partes?",
+            candidatos=candidatos,
             contexto=_contexto_busqueda(destino=nombre, pendiente="origen"),
         )
 

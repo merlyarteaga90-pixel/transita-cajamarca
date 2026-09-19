@@ -1,50 +1,122 @@
-"""Handler: INTENCION_VAGA. Consulta ambigua sin suficiente información."""
+"""Handler: INTENCION_VAGA. Consulta ambigua sin suficiente información.
+
+Antes devolvía un mensaje de texto; ahora intenta inferir un tema concreto
+(médico, aeropuerto, universidad, centro, bancos) y devuelve rutas reales
+que pasan por puntos de recorrido relacionados.
+"""
 
 from __future__ import annotations
+
+from sqlalchemy import text
 
 from backend.services.handlers._helpers import respuesta
 
 
-_RESPUESTAS_POR_PISTA = [
-    (
-        ["medico", "doctor", "hospital", "clinica", "salud"],
-        "Si necesitas atención médica, las opciones más conocidas en Cajamarca son el Hospital Regional "
-        "(vía de Evitamiento), EsSalud y la Clínica Limatambo. ¿A cuál quieres ir?",
-    ),
-    (
-        ["aeropuerto", "vuelo"],
-        "El Aeropuerto de Cajamarca está en la Av. Hoyos Rubio. Las rutas que llegan cerca son R-05, R-06 y R-12. "
-        "¿Quieres que te busque una ruta específica?",
-    ),
-    (
-        ["universidad", "estudiar", "unc", "upn", "upagu"],
-        "Hay varias universidades en Cajamarca: UNC, UPAGU, UPN. ¿A cuál quieres ir?",
-    ),
-    (
-        ["centro", "plaza", "plazuela"],
-        "El centro de Cajamarca tiene varias referencias: Plaza de Armas, Plazuela Bolognesi, Plazuela Miguel Grau. "
-        "¿A cuál vas?",
-    ),
-    (
-        ["banco", "plata", "cajeros"],
-        "Los bancos principales están cerca de la Plaza de Armas (BCP, BBVA, Interbank). "
-        "¿Vas a alguno en particular?",
-    ),
+_PISTAS = [
+    {
+        "keywords": ["medico", "doctor", "hospital", "clinica", "salud", "seguro"],
+        "terminos_sql": ["HOSPITAL", "CLINICA", "SALUD", "CENEPA"],
+        "mensaje": "Si necesitas atención médica, encontré rutas que pasan cerca de hospitales/clínicas.",
+    },
+    {
+        "keywords": ["aeropuerto", "vuelo", "avion"],
+        "terminos_sql": ["AEROPUERTO", "HOYOS RUBIO", "REVOREDO"],
+        "mensaje": "Estas rutas pasan cerca del Aeropuerto de Cajamarca.",
+    },
+    {
+        "keywords": ["universidad", "estudiar", "unc", "upn", "upagu", "la u"],
+        "terminos_sql": ["UNIVERSIDAD", "ATAHUALPA", "UNC"],
+        "mensaje": "Estas rutas pasan cerca de la UNC y otras universidades.",
+    },
+    {
+        "keywords": ["centro", "plaza", "plazuela", "plaza de armas"],
+        "terminos_sql": ["PLAZA", "PLAZUELA", "BOLOGNESI", "AMALIA PUGA"],
+        "mensaje": "Estas rutas pasan por el centro de Cajamarca.",
+    },
+    {
+        "keywords": ["banco", "plata", "cajeros", "atm"],
+        "terminos_sql": ["PLAZA", "BOLOGNESI", "AMALIA PUGA", "COMERCIO"],
+        "mensaje": "Los bancos principales están cerca del centro. Estas rutas pasan por ahí.",
+    },
 ]
 
 
+def _detectar_pista(consulta: str) -> dict | None:
+    texto = consulta.lower()
+    for pista in _PISTAS:
+        if any(kw in texto for kw in pista["keywords"]):
+            return pista
+    return None
+
+
+def _buscar_rutas_por_terminos(db, terminos: list[str]) -> list[dict]:
+    """Busca rutas cuyos puntos de recorrido contengan alguno de los términos."""
+    filtros = " OR ".join("p.nombre_original LIKE :t{}".format(i) for i in range(len(terminos)))
+    params = {f"t{i}": f"%{term}%" for i, term in enumerate(terminos)}
+
+    consulta = text(
+        f"""
+        SELECT DISTINCT
+            r.codigo,
+            r.nombre AS ruta_nombre,
+            r.tarifa_general,
+            r.tarifa_medio_pasaje,
+            r.frecuencia_general_min,
+            r.horario_inicio,
+            r.horario_fin,
+            e.nombre_comercial,
+            e.razon_social,
+            e.ruc,
+            s.tipo,
+            s.origen,
+            s.destino,
+            p.nombre_original AS punto
+        FROM rutas r
+        INNER JOIN sentidos s ON s.ruta_id = r.id
+        INNER JOIN puntos_recorrido p ON p.sentido_id = s.id
+        LEFT JOIN empresas e ON e.id = r.empresa_id
+        WHERE r.activo = TRUE AND ({filtros})
+        ORDER BY r.codigo, s.tipo
+        """
+    )
+
+    filas = db.execute(consulta, params).mappings().all()
+
+    resultados = []
+    for fila in filas:
+        resultados.append(
+            {
+                "codigo_ruta": fila["codigo"],
+                "nombre": fila["ruta_nombre"],
+                "sentido": fila["tipo"],
+                "punto": fila["punto"],
+                "nombre_comercial": fila["nombre_comercial"] or "",
+                "razon_social": fila["razon_social"] or "",
+                "ruc": fila["ruc"] or "",
+                "origen": fila["origen"] or "",
+                "destino": fila["destino"] or "",
+                "frecuencia_min": fila["frecuencia_general_min"],
+                "horario_inicio": fila["horario_inicio"],
+                "horario_fin": fila["horario_fin"],
+                "tarifa_general": fila["tarifa_general"],
+                "tarifa_medio_pasaje": fila["tarifa_medio_pasaje"],
+            }
+        )
+    return resultados
+
+
 def handle_vaga(db, params: dict) -> dict:
-    consulta = (params.get("_consulta") or "").lower()
-    pista_destino = (params.get("destino") or "").lower()
+    consulta = params.get("_consulta") or ""
+    pista = _detectar_pista(consulta)
 
-    texto_busqueda = f"{consulta} {pista_destino}"
-
-    for pistas, mensaje in _RESPUESTAS_POR_PISTA:
-        if any(p in texto_busqueda for p in pistas):
+    if pista:
+        resultados = _buscar_rutas_por_terminos(db, pista["terminos_sql"])
+        if resultados:
             return respuesta(
                 "Sugerencia",
-                "aclaracion",
-                mensaje,
+                "alternativas",
+                pista["mensaje"],
+                resultados=resultados,
             )
 
     return respuesta(

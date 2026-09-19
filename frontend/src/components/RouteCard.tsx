@@ -1,9 +1,9 @@
 import type { ApiRoute } from '../api/types';
-import { formatSchedule, routePath, safeText, withUnit } from '../lib/formatters';
+import { routePath, safeText, withUnit } from '../lib/formatters';
 import { CompanyInfo } from './CompanyInfo';
 import { MetricsGrid } from './MetricsGrid';
 import { RouteHeader } from './RouteHeader';
-import { TariffGrid } from './TariffGrid';
+import { RouteMetaBadges } from './RouteMetaBadges';
 
 export type RouteCardProps = {
   route: ApiRoute;
@@ -14,7 +14,6 @@ export function RouteCard({ route }: RouteCardProps) {
     ['⏱️', 'Tiempo total de ruta', withUnit(route.tiempo_total_ruta_min ?? route.tiempo_total_min, 'min')],
     ['📏', 'Distancia total de ruta', withUnit(route.distancia_total_ruta_km ?? route.distancia_km, 'km')],
     ['🔄', 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')],
-    ['🕐', 'Horario', formatSchedule(route)],
     ['📍', 'Recorrido', routePath(route)]
   ];
   const points = (route.puntos ?? []).filter((point) => safeText(point.nombre));
@@ -24,7 +23,7 @@ export function RouteCard({ route }: RouteCardProps) {
       <RouteHeader route={route} />
       <CompanyInfo route={route} />
       <MetricsGrid metrics={metrics} />
-      <TariffGrid route={route} />
+      <RouteMetaBadges route={route} />
 
       {points.length > 0 && (
         <div className="recorrido">

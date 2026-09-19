@@ -15,6 +15,26 @@ def _limpiar_lugar(texto: str | None) -> str | None:
     return texto or None
 
 
+_STOP_LUGAR = (
+    r"(?:pero|y)\s+no\s+s[eé]\s+(?:desde|de|a|ad[oó]nde)\s+d[oó]nde",
+    r"no\s+s[eé]\s+(?:desde|de|a|ad[oó]nde)\s+d[oó]nde",
+    r"no\s+s[eé]\s+(?:desde|de)\s+d[oó]nde",
+    r"no\s+s[eé]\s+a\s+d[oó]nde",
+    r"no\s+s[eé]\s+ad[oó]nde",
+    r"por\s+favor",
+    r"ayuda",
+)
+
+
+def _recortar_lugar(texto: str | None) -> str | None:
+    """Elimina frases colgantes como 'pero no sé desde dónde'."""
+    if not texto:
+        return None
+    for patron in _STOP_LUGAR:
+        texto = re.split(patron, texto, flags=re.IGNORECASE)[0]
+    return _limpiar_lugar(texto)
+
+
 def _prep_destino() -> str:
     return r"(?:a|al|a\s+la|a\s+los|a\s+las|hacia|hasta|pa(?:ra)?)"
 
@@ -131,8 +151,8 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
         if viaje:
             return {
                 "intencion": "BUSCAR_RUTA",
-                "origen": _limpiar_lugar(viaje.group(1)),
-                "destino": _limpiar_lugar(viaje.group(2)),
+                "origen": _recortar_lugar(viaje.group(1)),
+                "destino": _recortar_lugar(viaje.group(2)),
                 "ruta_codigo": None,
             }
 
@@ -147,7 +167,7 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
             return {
                 "intencion": "BUSCAR_RUTA",
                 "origen": None,
-                "destino": _limpiar_lugar(destino.group(1)),
+                "destino": _recortar_lugar(destino.group(1)),
                 "ruta_codigo": None,
             }
 
@@ -162,7 +182,7 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
     if solo_origen:
         return {
             "intencion": "BUSCAR_RUTA",
-            "origen": _limpiar_lugar(solo_origen.group(1)),
+            "origen": _recortar_lugar(solo_origen.group(1)),
             "destino": None,
             "ruta_codigo": None,
         }
@@ -175,8 +195,8 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
             return None
         return {
             "intencion": "BUSCAR_RUTA",
-            "origen": _limpiar_lugar(corto.group(1)),
-            "destino": _limpiar_lugar(corto.group(2)),
+            "origen": _recortar_lugar(corto.group(1)),
+            "destino": _recortar_lugar(corto.group(2)),
             "ruta_codigo": None,
         }
 

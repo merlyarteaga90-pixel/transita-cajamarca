@@ -94,6 +94,14 @@ export function App() {
     searchBoxRef.current?.focus();
   }, []);
 
+  const handleCandidateSelect = useCallback(
+    (candidate: string) => {
+      setSearchValue(candidate);
+      void handleSubmit(candidate);
+    },
+    [handleSubmit]
+  );
+
   const handleNextUnit = useCallback(
     async (codigo: string, sentido: string) => {
       const request = startRequest();
@@ -173,6 +181,7 @@ export function App() {
             copied={copied}
             onSpeak={handleSpeak}
             onCopy={handleCopy}
+            onCandidateSelect={handleCandidateSelect}
           />
         )}
       </main>

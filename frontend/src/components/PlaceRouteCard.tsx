@@ -1,8 +1,9 @@
 import type { ApiRoute } from '../api/types';
-import { formatSchedule, routePath, safeText, withUnit } from '../lib/formatters';
+import { routePath, safeText } from '../lib/formatters';
 import { CompanyInfo } from './CompanyInfo';
 import { MetricsGrid } from './MetricsGrid';
 import { RouteHeader } from './RouteHeader';
+import { RouteMetaBadges } from './RouteMetaBadges';
 
 export type PlaceRouteCardProps = {
   route: ApiRoute;
@@ -11,9 +12,7 @@ export type PlaceRouteCardProps = {
 export function PlaceRouteCard({ route }: PlaceRouteCardProps) {
   const metrics: Array<[string, string, string]> = [
     ['📍', 'Pasa por', safeText(route.punto)],
-    ['🧭', 'Recorrido', routePath(route)],
-    ['🕐', 'Horario', formatSchedule(route)],
-    ['🔄', 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')]
+    ['🧭', 'Recorrido', routePath(route)]
   ];
 
   return (
@@ -21,6 +20,7 @@ export function PlaceRouteCard({ route }: PlaceRouteCardProps) {
       <RouteHeader route={route} showNext={false} />
       <CompanyInfo route={route} />
       <MetricsGrid metrics={metrics} />
+      <RouteMetaBadges route={route} />
     </article>
   );
 }

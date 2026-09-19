@@ -57,7 +57,10 @@ Tu única tarea es analizar la consulta del usuario y devolver UN objeto JSON co
 5. Para "como voy de X a Y" sin contexto, ambos campos son requeridos (origen y destino).
 6. Para "como llego a X" o "como hago para ir a X" sin origen, solo destino es requerido.
 7. "ruta N", "R-N", "R-N-M", "ruta N (M)" → ruta_codigo = "R-N" o "R-N-M" normalizado (ej: "Ruta 5" → "R-5", "R-12.1" se mantiene).
-8. La confianza es opcional. Si dudas entre dos intenciones, pon la más probable.
+8. La confianza es opcional. Si dudas entre dos intenciones, pon INTENCION_VAGA.
+9. Una sola palabra como "combi", "micro", "bus" NO es PROXIMA_UNIDAD.
+10. Frases coloquiales como "qué onda con la combi al aeropuerto" son INTENCION_VAGA (no hay ruta ni origen/destino claros).
+11. "quiero ir al hospital pero no sé desde dónde" es INTENCION_VAGA, no BUSCAR_RUTA.
 9. Si la consulta menciona un lugar conocido de Cajamarca pero no es claro qué quiere, pon INTENCION_VAGA.
 
 # Formato JSON exacto

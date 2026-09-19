@@ -19,7 +19,7 @@ from backend.services.route_engine import buscar_rutas_por_lugar
 def _candidatos_ambiguos(resolucion: dict) -> list[str]:
     candidatos = []
     for sugerencia in resolucion.get("sugerencias", []):
-        nombre = sugerencia.get("nombre") or sugerencia.get("ubicacion")
+        nombre = sugerencia.get("ubicacion") or sugerencia.get("nombre")
         if nombre and nombre not in candidatos:
             candidatos.append(nombre)
     return candidatos[:5]
@@ -30,7 +30,7 @@ def _respuesta_ambigua(referencia: str, rol: str, resolucion: dict) -> dict:
     return respuesta(
         f"{rol.capitalize()} ambiguo",
         "aclaracion",
-        f"'{referencia}' puede referirse a varios lugares. Escribe el nombre completo.",
+        f"'{referencia}' puede referirse a varios lugares. Elegí una opción o escribí el nombre completo.",
         candidatos=candidatos,
     )
 
