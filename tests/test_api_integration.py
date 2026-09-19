@@ -20,6 +20,14 @@ class ApiIntegrationTests(unittest.TestCase):
             db.close()
         cls.client = TestClient(app)
 
+    def setUp(self):
+        self.gemini_gen_patch = patch(
+            "backend.services.respuesta_generator.generate_natural_response",
+            return_value=None,
+        )
+        self.gemini_gen_patch.start()
+        self.addCleanup(self.gemini_gen_patch.stop)
+
     def consultar_sin_gemini(self, consulta):
         with patch(
             "backend.services.intent_classifier._clasificar_con_gemini",
@@ -283,6 +291,30 @@ class ApiIntegrationTests(unittest.TestCase):
         ).json()
         self.assertEqual(datos["tipo"], "info_lugar")
         self.assertEqual(datos["intencion_solicitada"], "INFO_LUGAR")
+
+    def test_despedida_chau(self):
+        datos = self.consultar_sin_gemini("chau").json()
+        self.assertEqual(datos["tipo"], "despedida")
+
+    def test_despedida_adios(self):
+        datos = self.consultar_sin_gemini("adiós").json()
+        self.assertEqual(datos["tipo"], "despedida")
+
+    def test_despedida_gracias(self):
+        datos = self.consultar_sin_gemini("gracias").json()
+        self.assertEqual(datos["tipo"], "despedida")
+
+    def test_despedida_hasta_luego(self):
+        datos = self.consultar_sin_gemini("hasta luego").json()
+        self.assertEqual(datos["tipo"], "despedida")
+
+    def test_saludo_hola(self):
+        datos = self.consultar_sin_gemini("hola").json()
+        self.assertEqual(datos["tipo"], "saludo")
+
+    def test_saludo_buenas(self):
+        datos = self.consultar_sin_gemini("buenas").json()
+        self.assertEqual(datos["tipo"], "saludo")
 
 
 if __name__ == "__main__":

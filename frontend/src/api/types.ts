@@ -55,6 +55,9 @@ export type ApiRoute = {
   hora_actual?: string;
   estado_servicio?: string;
   mensaje_servicio?: string;
+
+  // Tipo de consulta que originó la respuesta (TARIFA, HORARIO, etc.)
+  consulta_tipo?: string;
 };
 
 export type ApiResponseTipo =
@@ -100,8 +103,9 @@ export type HealthResponse = {
   estado: string;
   status?: string;
   db?: string;
-  ollama?: string;
   modo: string;
+  gemini?: string;
+  gemini_model?: string | null;
   counts?: Record<string, number>;
   version?: string;
 };

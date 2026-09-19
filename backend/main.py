@@ -72,7 +72,7 @@ def health(db=Depends(get_db)):
             status_code=503, detail="Base de datos no disponible"
         ) from exc
 
-    from backend.services.gemini_client import is_configured as gemini_configured
+    from backend.services.gemini_client import is_configured as gemini_configured, GEMINI_MODEL
 
     gemini = "configurado" if gemini_configured() else "no_configurado"
 
@@ -80,6 +80,7 @@ def health(db=Depends(get_db)):
         "status": "ok" if rutas and puntos else "sin_datos",
         "modo": "completo" if gemini == "configurado" else "degradado",
         "gemini": gemini,
+        "gemini_model": GEMINI_MODEL if gemini_configured() else None,
         "empresas": empresas,
         "rutas": rutas,
         "sentidos": sentidos,
@@ -166,5 +167,9 @@ if __name__ == "__main__":
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
+
+    from backend.services.gemini_client import is_configured as _gemini_config, GEMINI_MODEL as _model
+    _gemini_status = "configurado con " + _model if _gemini_config() else "no configurado"
+    print(f"Gemini: {_gemini_status}")
     print("Servidor en http://127.0.0.1:8000")
     uvicorn.run(app, host="127.0.0.1", port=8000)

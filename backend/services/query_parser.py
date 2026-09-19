@@ -62,10 +62,10 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
     original = re.sub(r"\s+", " ", mensaje.strip())
     simple = _sin_tildes(original.lower())
 
-    if re.fullmatch(r"(?:hola|buenas|buenos dias|buenas tardes|buenas noches|gracias|chau|adios)[!. ]*", simple):
+    if re.fullmatch(r"(?:hola|buenas|buenos dias|buenas tardes|buenas noches)[!. ]*", simple):
         return {"intencion": "SALUDO", "origen": None, "destino": None, "ruta_codigo": None}
 
-    if re.fullmatch(r"(?:chau|adios|hasta luego|nos vemos|bye)[!. ]*", simple):
+    if re.fullmatch(r"(?:gracias|chau|adios|hasta luego|nos vemos|bye)[!. ]*", simple):
         return {"intencion": "DESPEDIDA", "origen": None, "destino": None, "ruta_codigo": None}
 
     info_lugar = re.match(

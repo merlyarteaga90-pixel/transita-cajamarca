@@ -1,8 +1,8 @@
 # Asistente de Rutas de Cajamarca
 
-Aplicación local con FastAPI, SQLite y frontend web. Ollama es opcional: las consultas frecuentes se interpretan con reglas deterministas y el modelo se usa solo como respaldo para frases no reconocidas.
+Aplicación local con FastAPI, SQLite, frontend React y Gemini API. Las consultas frecuentes se interpretan con reglas deterministas y Gemini se usa para clasificar frases no reconocidas y generar respuestas naturales.
 
-El frontend está construido con Svelte + Vite y se sirve desde FastAPI usando el build generado en `frontend/dist`.
+El frontend está construido con React 18 + Vite y se sirve desde FastAPI usando el build generado en `frontend/dist`.
 
 ## Funciones actuales
 
@@ -13,12 +13,13 @@ El frontend está construido con Svelte + Vite y se sirve desde FastAPI usando e
 - Establecimientos cercanos (bancos, restaurantes, farmacias) por lugar de referencia.
 - Horarios, frecuencias, tarifas y salida teórica por ruta.
 - Familias de ruta: `ruta 03` devuelve `R-03-1` y `R-03-2`.
-- Clasificación de intención vía Ollama (con parser determinista de fallback).
-- Sugerencias ante consultas vagas (ej. "quiero ir al médico").
+- Clasificación de intención vía Gemini (con parser determinista de fallback).
+- Respuestas naturales verificadas generadas por Gemini a partir de datos SQL.
+- Sugerencias ante consultas vagas (deterministas).
 - Manejo de "fuera de alcance" para consultas no relacionadas.
 - Contexto conversacional (4-5 turnos).
 - Lista de candidatos cuando un lugar es ambiguo.
-- Funcionamiento principal aunque Ollama no esté disponible.
+- Funcionamiento principal aunque Gemini no esté configurado.
 
 SQLite es la única fuente de rutas y datos operativos. IDA y VUELTA se procesan como recorridos independientes. Solo se buscan rutas directas; no hay transbordos todavía.
 
@@ -26,7 +27,7 @@ SQLite es la única fuente de rutas y datos operativos. IDA y VUELTA se procesan
 
 - Python 3.12 recomendado.
 - SQLite (archivo local `transita_cajamarca.db`).
-- Ollama opcional con el modelo `llama3.2:3b`.
+- Gemini API key (gratuita para desarrollo en Google AI Studio).
 
 ## Configuración
 
@@ -43,13 +44,13 @@ py -3.12 -m venv .venv
 & ".venv\Scripts\python.exe" -m pip install -r requirements.txt
 ```
 
-Copia `.env.example` como `.env`. La configuración actual esperada es:
+Copia `.env.example` como `.env` y añade tu clave:
 
 ```dotenv
 DB_PATH=transita_cajamarca.db
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2:3b
-OLLAMA_TIMEOUT=4
+GEMINI_API_KEY=tu_clave_aqui
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_TIMEOUT_SECONDS=8
 ```
 
 ## Base de datos
@@ -63,15 +64,6 @@ python -m backend.init_db --reset
 
 Carga en orden: `database/00_schema.sql`, `01_seed.sql`, `02_info_lugares.sql`, `03_establecimientos_cercanos.sql`.
 El flag `--reset` elimina el archivo de DB antes de cargar.
-
-## Ollama opcional
-
-```powershell
-ollama pull llama3.2:3b
-ollama serve
-```
-
-Si Ollama está apagado, horarios, tarifas, frecuencias, rutas por lugar y búsquedas con estructuras claras continúan funcionando.
 
 ## Iniciar la aplicación
 
@@ -114,7 +106,7 @@ Pruebas automatizadas:
 & ".venv\Scripts\python.exe" -m unittest discover -s tests -v
 ```
 
-Las pruebas no requieren un servidor HTTP ni Ollama activos.
+Las pruebas no requieren Gemini activo.
 
 ## Interpretación de datos
 

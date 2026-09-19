@@ -12,12 +12,12 @@ export function Header() {
 
     getHealth(controller.signal)
       .then((data) => {
-        setServiceText(data.modo === 'degradado' ? 'Servicio disponible' : 'Conectado ');
+        setServiceText(data.modo === 'degradado' ? 'Servicio básico' : 'Gemini activo');
         setStatus((data.estado ?? data.status) === 'ok' ? 'ok' : 'error');
         setTitle(
           data.modo === 'degradado'
-            ? 'Las consultas principales funcionan; Ollama no está disponible.'
-            : 'MySQL y Ollama disponibles.'
+            ? 'Gemini no configurado; consultas básicas funcionando.'
+            : 'Gemini configurado para respuestas naturales.'
         );
       })
       .catch(() => {

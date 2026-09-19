@@ -6,7 +6,7 @@ saber para no romper el proyecto ni repetir decisiones ya tomadas.
 ## Proyecto
 
 "Asistente de Rutas de Cajamarca" — backend FastAPI + frontend React + SQLite
-+ Ollama opcional. Responde consultas en español sobre transporte público de
++ Gemini API (opcional). Responde consultas en español sobre transporte público de
 Cajamarca, Perú.
 
 ## Comandos clave
@@ -16,7 +16,7 @@ Cajamarca, Perú.
 python -m backend.init_db            # crea si no existe, salta lo ya cargado
 python -m backend.init_db --reset    # borra el .db y recarga todo
 
-# Backend: tests (29 pruebas, todas pasan sin Ollama)
+# Backend: tests (35 pruebas, todas pasan sin Gemini)
 python -m unittest tests.test_api_integration -v
 
 # Backend: arrancar servidor de desarrollo
@@ -39,17 +39,15 @@ backend/
   database.py                SQLAlchemy engine sobre SQLite
   init_db.py                 Carga los SQL de database/
   prompts/
-    intent_classifier.txt    Prompt corto (~120 líneas) para Ollama
-    respuesta_generator.txt   Prompt para resumir rutas en lenguaje natural
-    vaga_clarification.txt    Prompt para preguntas de aclaración específicas
+    intent_classifier.txt    Prompt corto (~120 líneas) para Gemini
+    respuesta_generator.txt  Prompt para resumir rutas en lenguaje natural
   services/
-    assistant_service.py     Orquestador: clasifica -> contexto -> handler -> prosa
-    intent_classifier.py     Parser determinista -> Ollama -> INTENCION_VAGA
-    ollama_client.py         Cliente singleton para Ollama
+    assistant_service.py      Orquestador: clasifica -> contexto -> handler -> prosa
+    intent_classifier.py     Parser determinista -> Gemini -> INTENCION_VAGA
+    gemini_client.py         Cliente singleton para Gemini
     respuesta_generator.py   Genera prosa natural desde resultados SQL
-    vaga_clarifier.py        Genera preguntas para consultas ambiguas
-    text_helpers.py          Limpia texto generado por Ollama
-    query_parser.py          Regex para frases frecuentes (sin Ollama)
+    vaga_clarifier.py       Aclaraciones deterministas para consultas vagas
+    query_parser.py          Regex para frases frecuentes (sin IA)
     reference_service.py     Resuelve alias coloquiales -> ubicaciones oficiales
     route_engine.py          Búsquedas SQL: rutas, sentidos, puntos
     route_code_service.py    Normaliza "R05", "ruta 05", "03-1" -> "R-5", "R-3-1"
@@ -63,7 +61,7 @@ database/
   03_establecimientos_cercanos.sql  Negocios/establecimientos por lugar
 frontend/                    React 18 + Vite + TypeScript + CSS Modules
 tests/
-  test_api_integration.py    29 tests, todos pasan sin Ollama
+  test_api_integration.py    35 tests, todos pasan sin Gemini
 ```
 
 ## Flujo de una consulta
@@ -71,26 +69,25 @@ tests/
 1. Frontend hace `POST /api/consultar`.
 2. `assistant_service.consultar` clasifica la intención:
    - Parser determinista primero (rápido, cubre frases frecuentes).
-   - Ollama como primary cuando el parser no reconoce.
-   - Fallback a `INTENCION_VAGA` si Ollama no está disponible.
+   - Gemini como primary cuando el parser no reconoce.
+   - Fallback a `INTENCION_VAGA` si Gemini no está disponible.
 3. Se aplica contexto conversacional (slots `origen`/`destino`).
 4. Se despacha al handler correspondiente.
 5. Handler consulta SQLite y devuelve dict con `tipo`, `respuesta`, `resultados`.
-6. Para rutas con resultados, Ollama puede reescribir `respuesta` en lenguaje
+6. Para rutas con resultados, Gemini reescribe `respuesta` en lenguaje
    natural usando únicamente esos datos. Si falla, se conserva la plantilla.
-7. Para `INTENCION_VAGA`, Ollama puede generar una pregunta específica. Si
-   falla, se conserva la aclaración determinista.
+7. Para `INTENCION_VAGA`, se genera una pregunta determinista de aclaración.
 
-**Importante:** Ollama NO es fallback — es el clasificador primary.
-El parser determinista es el fast-path. Si Ollama está apagado, las frases
+**Importante:** Gemini NO es fallback — es el clasificador primary.
+El parser determinista es el fast-path. Si Gemini no está configurado, las frases
 frecuentes siguen funcionando porque el parser las cubre.
 
 ## Intenciones soportadas
 
 | Intención | Handler | Descripción |
 |-----------|---------|-------------|
-| `SALUDO` | `handlers/saludo.py` | Saludo inicial |
-| `DESPEDIDA` | `handlers/saludo.py` | Chau/gracias |
+| `SALUDO` | `handlers/saludo.py` | Hola/buenas |
+| `DESPEDIDA` | `handlers/saludo.py` | Chau/gracias/hasta luego |
 | `BUSCAR_RUTA` | `handlers/buscar_ruta.py` | De origen a destino |
 | `RUTAS_POR_LUGAR` | `handlers/rutas_por_lugar.py` | Qué rutas pasan por X |
 | `QUE_RUTA_PASA_CERCA` | `handlers/rutas_por_lugar.py` | Usa `user_location` (Haversine) |
@@ -138,7 +135,7 @@ frecuentes siguen funcionando porque el parser las cubre.
 - **No committear `frontend/dist/`** — está en `.gitignore` eventualmente, hoy se regenera con `npm run build`.
 - **No usar MySQL** — SQLite es la única fuente.
 - **No usar `pymysql` ni `openpyxl`** — dependencias eliminadas en requirements.txt.
-- **No llamar Ollama desde el frontend** — siempre vía backend.
+- **No llamar Gemini desde el frontend** — siempre vía backend.
 - **No agregar system prompt gigante en el código** — vive en `backend/prompts/*.txt`.
 - **No inventar datos en respuestas** — si no hay ruta directa, decir "sin ruta directa"; no rellenar.
 
@@ -147,10 +144,9 @@ frecuentes siguen funcionando porque el parser las cubre.
 - 28 empresas, 52 rutas, 104 sentidos, 419 puntos, **620 aliases** activos.
 - 38 lugares con descripción (`lugares_info`).
 - 30 establecimientos cercanos (`establecimientos_cercanos`).
-- 29 tests pasan en ~0.5s sin Ollama.
-- Ollama local con `llama3.2:3b` funciona, es opcional pero recomendado.
-- `OLLAMA_MODEL` permite probar modelos mayores como `llama3.1:8b` o
-  `qwen2.5:7b` para mejorar la prosa y el razonamiento, a cambio de latencia.
+- 35 tests pasan en ~0.5s sin Gemini.
+- Gemini API con `gemini-3.5-flash-lite` es el modelo por defecto.
+- `GEMINI_MODEL` permite probar otros modelos; modelo debe soportar `generateContent`.
 
 ## Datos cargados
 
@@ -207,7 +203,7 @@ Response:
 
 1. Agregar el literal en `backend/schemas.py` (en `Intencion` y `RespuestaAPI.tipo` si aplica).
 2. Documentar el patrón en `backend/prompts/intent_classifier.txt`.
-3. (Opcional) Agregar patrón regex en `backend/services/query_parser.py` para cobertura sin Ollama.
+3. (Opcional) Agregar patrón regex en `backend/services/query_parser.py` para cobertura determinista.
 4. Crear `backend/services/handlers/<nombre>.py` con función `handle_<intencion>(db, params)`.
 5. Registrar dispatch en `backend/services/assistant_service.py:_dispatch`.
 6. Agregar test en `tests/test_api_integration.py`.
