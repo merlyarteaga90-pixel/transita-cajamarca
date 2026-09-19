@@ -40,10 +40,15 @@ backend/
   init_db.py                 Carga los SQL de database/
   prompts/
     intent_classifier.txt    Prompt corto (~120 líneas) para Ollama
+    respuesta_generator.txt   Prompt para resumir rutas en lenguaje natural
+    vaga_clarification.txt    Prompt para preguntas de aclaración específicas
   services/
-    assistant_service.py     Orquestador: clasifica -> contexto -> handler
+    assistant_service.py     Orquestador: clasifica -> contexto -> handler -> prosa
     intent_classifier.py     Parser determinista -> Ollama -> INTENCION_VAGA
     ollama_client.py         Cliente singleton para Ollama
+    respuesta_generator.py   Genera prosa natural desde resultados SQL
+    vaga_clarifier.py        Genera preguntas para consultas ambiguas
+    text_helpers.py          Limpia texto generado por Ollama
     query_parser.py          Regex para frases frecuentes (sin Ollama)
     reference_service.py     Resuelve alias coloquiales -> ubicaciones oficiales
     route_engine.py          Búsquedas SQL: rutas, sentidos, puntos
@@ -71,6 +76,10 @@ tests/
 3. Se aplica contexto conversacional (slots `origen`/`destino`).
 4. Se despacha al handler correspondiente.
 5. Handler consulta SQLite y devuelve dict con `tipo`, `respuesta`, `resultados`.
+6. Para rutas con resultados, Ollama puede reescribir `respuesta` en lenguaje
+   natural usando únicamente esos datos. Si falla, se conserva la plantilla.
+7. Para `INTENCION_VAGA`, Ollama puede generar una pregunta específica. Si
+   falla, se conserva la aclaración determinista.
 
 **Importante:** Ollama NO es fallback — es el clasificador primary.
 El parser determinista es el fast-path. Si Ollama está apagado, las frases
@@ -140,6 +149,8 @@ frecuentes siguen funcionando porque el parser las cubre.
 - 30 establecimientos cercanos (`establecimientos_cercanos`).
 - 29 tests pasan en ~0.5s sin Ollama.
 - Ollama local con `llama3.2:3b` funciona, es opcional pero recomendado.
+- `OLLAMA_MODEL` permite probar modelos mayores como `llama3.1:8b` o
+  `qwen2.5:7b` para mejorar la prosa y el razonamiento, a cambio de latencia.
 
 ## Datos cargados
 

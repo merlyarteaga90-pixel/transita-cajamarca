@@ -10,6 +10,7 @@ from __future__ import annotations
 from sqlalchemy import text
 
 from backend.services.handlers._helpers import respuesta
+from backend.services.vaga_clarifier import generar_aclaracion_vaga
 
 
 _PISTAS = [
@@ -119,9 +120,21 @@ def handle_vaga(db, params: dict) -> dict:
                 resultados=resultados,
             )
 
+    slots = {
+        nombre: valor
+        for nombre in ("origen", "destino", "ruta_codigo")
+        if (valor := params.get(nombre))
+    }
+    pregunta = generar_aclaracion_vaga(
+        consulta=consulta,
+        slots=slots,
+        contexto=params.get("_contexto"),
+    )
+
     return respuesta(
         "Necesito más detalles",
         "aclaracion",
-        "No estoy seguro de qué necesitas. ¿Puedes indicarme origen y destino? "
+        pregunta
+        or "No estoy seguro de qué necesitas. ¿Puedes indicarme origen y destino? "
         "Por ejemplo: 'cómo voy del mercado central al aeropuerto'.",
     )

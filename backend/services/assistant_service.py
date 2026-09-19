@@ -16,6 +16,7 @@ import re
 import uuid
 
 from backend.services import intent_classifier
+from backend.services.respuesta_generator import generar_respuesta_natural
 from backend.services.handlers import (
     buscar_ruta,
     info_lugar,
@@ -161,6 +162,7 @@ def consultar(db, request) -> dict:
         "destino": clasificacion.get("destino"),
         "ruta_codigo": clasificacion.get("ruta_codigo"),
         "user_location": user_location,
+        "_contexto": contexto or {},
     }
 
     params = _aplicar_contexto(params, contexto)
@@ -171,6 +173,16 @@ def consultar(db, request) -> dict:
     )
 
     respuesta = _dispatch(db, params["_intencion"], params)
+
+    if respuesta.get("tipo") in ("ruta", "alternativas", "rutas_por_lugar") and respuesta.get("resultados"):
+        prosa = generar_respuesta_natural(
+            consulta=consulta,
+            resultados=respuesta["resultados"],
+            contexto=respuesta.get("contexto") or contexto,
+        )
+        if prosa:
+            respuesta["respuesta"] = prosa
+
     respuesta["session_id"] = session_id
     respuesta["intencion_solicitada"] = params["_intencion"]
     return respuesta

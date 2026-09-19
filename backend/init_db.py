@@ -8,6 +8,7 @@ Carga en orden:
     database/01_seed.sql
     database/02_info_lugares.sql
     database/03_establecimientos_cercanos.sql
+    database/04_puntos_coords.sql
 
 Si la base ya existe con tablas pobladas, solo carga los datos nuevos (no duplica).
 """
@@ -33,6 +34,7 @@ ARCHIVOS_SQL = [
     "01_seed.sql",
     "02_info_lugares.sql",
     "03_establecimientos_cercanos.sql",
+    "04_puntos_coords.sql",
 ]
 
 
@@ -94,6 +96,14 @@ def inicializar(reset: bool = False) -> None:
         if archivo == "00_schema.sql":
             print(f"[init_db] Cargando schema: {archivo}")
             conn.executescript(ruta.read_text(encoding="utf-8"))
+            continue
+
+        if archivo == "04_puntos_coords.sql":
+            print(f"[init_db] Aplicando coordenadas: {archivo}")
+            try:
+                conn.executescript(ruta.read_text(encoding="utf-8"))
+            except sqlite3.IntegrityError as exc:
+                print(f"[init_db] AVISO: {archivo} ya estaba cargado ({exc})")
             continue
 
         if archivo == "01_seed.sql" and alias_count > 0:
