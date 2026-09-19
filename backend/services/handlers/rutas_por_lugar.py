@@ -8,12 +8,17 @@ pero la fuente del lugar es diferente:
 
 from __future__ import annotations
 
+import os
 from typing import Any
 from sqlalchemy import text
 
 from backend.services.handlers._helpers import respuesta
 from backend.services.reference_service import resolver_referencia
 from backend.services.route_engine import buscar_rutas_por_lugar
+
+
+# Radio máximo en km para considerar un punto "cercano"
+_MAX_DISTANCIA_KM = float(os.getenv("GEO_MAX_DISTANCIA_KM", "2.0"))
 
 
 def _candidatos_ambiguos(resolucion: dict) -> list[str]:
@@ -96,39 +101,75 @@ def handle_rutas_por_lugar(db, params: dict) -> dict:
 
 
 def handle_que_ruta_pasa_cerca(db, params: dict) -> dict:
-    """Si el usuario envió coordenadas, las usamos para buscar puntos cercanos."""
+    """Si el usuario envió coordenadas, busca puntos cercanos dentro de un radio."""
     user_location = params.get("user_location")
 
     if user_location:
         lat = user_location.get("lat")
         lon = user_location.get("lon")
+        accuracy = user_location.get("accuracy_m")
 
-        fila = db.execute(
+        # Ajustar radio según precisión del GPS (máximo 5km)
+        radio = min(_MAX_DISTANCIA_KM + (accuracy / 1000 if accuracy else 0), 5.0)
+
+        filas = db.execute(
             text(
                 """
-                SELECT nombre_original AS nombre,
-                       (6371 * acos(
-                           cos(radians(:lat)) * cos(radians(latitud))
-                           * cos(radians(longitud) - radians(:lon))
-                           + sin(radians(:lat)) * sin(radians(latitud))
-                       )) AS distancia_km
-                FROM puntos_recorrido
-                WHERE latitud IS NOT NULL AND longitud IS NOT NULL
+                SELECT
+                    r.codigo AS codigo_ruta,
+                    s.tipo AS sentido,
+                    p.nombre_original AS nombre,
+                    (6371 * acos(
+                        cos(radians(:lat)) * cos(radians(p.latitud))
+                        * cos(radians(p.longitud) - radians(:lon))
+                        + sin(radians(:lat)) * sin(radians(p.latitud))
+                    )) AS distancia_km
+                FROM puntos_recorrido p
+                JOIN sentidos s ON s.id = p.sentido_id
+                JOIN rutas r ON r.id = s.ruta_id
+                WHERE p.latitud IS NOT NULL
+                  AND p.longitud IS NOT NULL
+                  AND (p.coord_confianza IS NULL OR p.coord_confianza != 'BAJA')
+                HAVING distancia_km <= :radio
                 ORDER BY distancia_km ASC
-                LIMIT 1
+                LIMIT 20
                 """
             ),
-            {"lat": lat, "lon": lon},
-        ).mappings().first()
+            {"lat": lat, "lon": lon, "radio": radio},
+        ).mappings().all()
 
-        if fila:
-            lugar = fila["nombre"]
-            return _buscar_y_armar(db, lugar, "ver rutas cercanas")
+        if filas:
+            # Agrupar por ruta+sentido, tomar la distancia mínima
+            agrupado = {}
+            for f in filas:
+                clave = (f["codigo_ruta"], f["sentido"])
+                if clave not in agrupado or f["distancia_km"] < agrupado[clave]["distancia_km"]:
+                    agrupado[clave] = dict(f)
+
+            resultados = [
+                {
+                    "codigo_ruta": v["codigo_ruta"],
+                    "sentido": v["sentido"],
+                    "distancia_aprox_m": round(v["distancia_km"] * 1000),
+                }
+                for v in list(agrupado.values())[:10]
+            ]
+
+            opciones = ", ".join(
+                f"{r['codigo_ruta']} ({r['sentido']})"
+                for r in resultados
+            )
+            return respuesta(
+                f"Rutas cercanas: {len(resultados)}",
+                "rutas_por_lugar",
+                f"Encontré {len(resultados)} rutas con referencias cercanas: {opciones}.",
+                resultados=resultados,
+            )
 
         return respuesta(
             "Sin ubicación cercana",
             "sin_resultados",
-            "No encontré puntos de ruta cerca de tu ubicación actual.",
+            "No encontré puntos de ruta verificados cerca de tu ubicación actual.",
         )
 
     destino = params.get("destino") or params.get("lugar")

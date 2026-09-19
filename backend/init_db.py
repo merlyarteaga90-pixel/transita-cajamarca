@@ -35,6 +35,7 @@ ARCHIVOS_SQL = [
     "02_info_lugares.sql",
     "03_establecimientos_cercanos.sql",
     "04_puntos_coords.sql",
+    "05_schema_geo_confidence.sql",
 ]
 
 
