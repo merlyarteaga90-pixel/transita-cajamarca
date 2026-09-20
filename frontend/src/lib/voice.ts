@@ -1,13 +1,23 @@
 export function normalizeVoiceText(text: string): string {
   return text
     .replace(/\*\*/g, '')
+    .replace(/__/g, '')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/`/g, '')
+    .replace(/^#+\s+/gm, '')
+    .replace(/^>\s+/gm, '')
+    .replace(/^[-*+]\s+/gm, '- ')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/•/g, ', ')
-    .replace(/➔|→/g, ' hacia ')
+    .replace(/➔|→|➜|⇒|->/g, ' hacia ')
     .replace(/S\//g, 'soles ')
     .replace(/Cdra\./g, 'cuadra ')
     .replace(/Av\./g, 'avenida ')
     .replace(/Jr\./g, 'jirón ')
-    .replace(/C\.P\./g, 'centro poblado ');
+    .replace(/C\.P\./g, 'centro poblado ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 export function preloadVoices(): void {

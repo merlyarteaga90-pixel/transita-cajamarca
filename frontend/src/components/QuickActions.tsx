@@ -1,3 +1,4 @@
+import { Clock, MapPin, Route, Ticket } from 'lucide-react';
 import { useState } from 'react';
 
 export type QuickActionsProps = {
@@ -24,23 +25,23 @@ export function QuickActions({ onOpenRoutes, onExample }: QuickActionsProps) {
       <div className="quick-actions-grid">
         <button
           type="button"
-          className="quick-action-card destacado qa-next"
-          onClick={onOpenRoutes}
+          className="quick-action-card qa-how"
+          aria-pressed={activeHelp === 'how'}
+          onClick={() => toggleHelp('how', 'de Av. Perú a Jr. 11 de Febrero')}
         >
-          <span className="quick-icon">🕒</span>
-          <strong>Próxima combi</strong>
-          <small>Busca una ruta y revisa su salida teórica.</small>
+          <span className="quick-icon" aria-hidden="true"><Route size={20} strokeWidth={2} /></span>
+          <strong>Cómo llegar</strong>
+          <small>Consulta qué combi tomar entre dos lugares.</small>
         </button>
 
         <button
           type="button"
-          className="quick-action-card qa-fare"
-          aria-pressed={activeHelp === 'fare'}
-          onClick={() => toggleHelp('fare', 'tarifa de la ruta 05')}
+          className="quick-action-card destacado qa-next"
+          onClick={onOpenRoutes}
         >
-          <span className="quick-icon">🎫</span>
-          <strong>Tarifa por ruta</strong>
-          <small>Pregunta por el pasaje usando el código.</small>
+          <span className="quick-icon" aria-hidden="true"><Clock size={20} strokeWidth={2} /></span>
+          <strong>Próxima combi</strong>
+          <small>Busca una ruta y revisa su salida teórica.</small>
         </button>
 
         <button
@@ -49,20 +50,20 @@ export function QuickActions({ onOpenRoutes, onExample }: QuickActionsProps) {
           aria-pressed={activeHelp === 'place'}
           onClick={() => toggleHelp('place', 'rutas que pasan por Shudal')}
         >
-          <span className="quick-icon">📍</span>
+          <span className="quick-icon" aria-hidden="true"><MapPin size={20} strokeWidth={2} /></span>
           <strong>Rutas por lugar</strong>
           <small>Encuentra rutas que pasan por una zona.</small>
         </button>
 
         <button
           type="button"
-          className="quick-action-card qa-how"
-          aria-pressed={activeHelp === 'how'}
-          onClick={() => toggleHelp('how', 'cómo voy a Shudal')}
+          className="quick-action-card qa-fare"
+          aria-pressed={activeHelp === 'fare'}
+          onClick={() => toggleHelp('fare', 'tarifa y horario de la ruta 05')}
         >
-          <span className="quick-icon">⌁</span>
-          <strong>Cómo consultar</strong>
-          <small>Ejemplos para obtener mejores respuestas.</small>
+          <span className="quick-icon" aria-hidden="true"><Ticket size={20} strokeWidth={2} /></span>
+          <strong>Tarifa y horario</strong>
+          <small>Pregunta por el pasaje y horarios de una ruta.</small>
         </button>
       </div>
 
@@ -70,8 +71,8 @@ export function QuickActions({ onOpenRoutes, onExample }: QuickActionsProps) {
         <div className="quick-help">
           {activeHelp === 'fare' && (
             <>
-              <strong>Consulta tarifas con el número de ruta.</strong>
-              <p>Ejemplos: "tarifa de la ruta 05", "cuánto cuesta la ruta 04".</p>
+              <strong>Consulta tarifa y horario con el código de ruta.</strong>
+              <p>Ejemplos: "tarifa y horario de la ruta 05", "cuánto cuesta la ruta 04 y a qué hora sale".</p>
             </>
           )}
           {activeHelp === 'place' && (
@@ -82,8 +83,8 @@ export function QuickActions({ onOpenRoutes, onExample }: QuickActionsProps) {
           )}
           {activeHelp === 'how' && (
             <>
-              <strong>Escribe como hablarías normalmente.</strong>
-              <p>Ejemplos: "cómo voy a Shudal", "de Shudal al hospital", "cuál es la ruta 05".</p>
+              <strong>Escribe el origen y destino.</strong>
+              <p>Ejemplos: "de Av. Perú a Jr. 11 de Febrero", "de Yanacocha al Penal de Huacariz".</p>
             </>
           )}
         </div>

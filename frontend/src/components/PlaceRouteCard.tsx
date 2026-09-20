@@ -1,3 +1,4 @@
+import { Compass, MapPin } from 'lucide-react';
 import type { ApiRoute } from '../api/types';
 import { routePath, safeText } from '../lib/formatters';
 import { CompanyInfo } from './CompanyInfo';
@@ -10,17 +11,20 @@ export type PlaceRouteCardProps = {
 };
 
 export function PlaceRouteCard({ route }: PlaceRouteCardProps) {
-  const metrics: Array<[string, string, string]> = [
-    ['📍', 'Pasa por', safeText(route.punto)],
-    ['🧭', 'Recorrido', routePath(route)]
+  const metrics: Array<[React.ReactNode, string, string]> = [
+    [<MapPin size={16} strokeWidth={2} aria-hidden="true" />, 'Pasa por', safeText(route.punto)],
+    [<Compass size={16} strokeWidth={2} aria-hidden="true" />, 'Recorrido', routePath(route)]
   ];
 
   return (
     <article className="ruta-card ruta-lugar-card">
-      <RouteHeader route={route} showNext={false} />
+      <RouteHeader
+        route={route}
+        showNext={false}
+        meta={<RouteMetaBadges route={route} asHeaderContent />}
+      />
       <CompanyInfo route={route} />
       <MetricsGrid metrics={metrics} />
-      <RouteMetaBadges route={route} />
     </article>
   );
 }

@@ -36,7 +36,7 @@ export function Header() {
     <header className="encabezado">
       <div className="header-top">
         <div className="logo-badge">
-          <span className="logo-icono">🚌</span>
+          <span className="logo-icono" aria-hidden="true">🚌</span>
           <span className="logo-texto">Sistema de rutas urbanas</span>
         </div>
         <div className="status-pill" data-status={status} title={title}>
@@ -63,10 +63,6 @@ export function Header() {
             <span className="ruta-bus">🚌</span>
             <span className="ruta-linea"></span>
             <span className="ruta-nodo nodo-fin"></span>
-          </div>
-          <div className="panel-datos">
-            <span>Datos de ruta</span>
-            <strong>horarios · tarifas · recorridos</strong>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { BusFront } from 'lucide-react';
 import type { ApiRoute } from '../api/types';
 import { safeText } from '../lib/formatters';
 
@@ -14,7 +15,7 @@ export function CompanyInfo({ route }: CompanyInfoProps) {
 
   return (
     <div className="empresa-info">
-      <span className="empresa-icono">🚌</span>
+      <span className="empresa-icono" aria-hidden="true"><BusFront size={16} strokeWidth={2} /></span>
       <div>
         {name && <strong>{name}</strong>}
         {businessName && businessName !== name && <span>{businessName}</span>}

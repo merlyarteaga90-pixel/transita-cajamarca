@@ -1,3 +1,4 @@
+import { BusFront, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { getRoutes } from '../api/client';
 import type { ApiRoute } from '../api/types';
@@ -25,21 +26,33 @@ export function RouteModal({ open, onClose, onSelect }: RouteModalProps) {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (!open || loaded || loading) return;
+    if (!open || loaded) return;
 
     const controller = new AbortController();
     setLoading(true);
     setError('');
+    let cancelled = false;
+
     getRoutes(controller.signal)
       .then((data) => {
+        if (cancelled) return;
         setRoutes(data);
         setLoaded(true);
       })
-      .catch(() => setError('No se pudieron cargar las rutas.'))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (cancelled || err.name === 'AbortError') return;
+        setError('No se pudieron cargar las rutas.');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
 
-    return () => controller.abort();
-  }, [open, loaded, loading]);
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [open, loaded]);
 
   const filteredRoutes = useMemo(() => {
     const clean = search.trim().toLowerCase();
@@ -97,7 +110,10 @@ export function RouteModal({ open, onClose, onSelect }: RouteModalProps) {
     >
       <div className="modal-contenido">
         <div className="modal-header">
-          <h3>🚌 Seleccionar Ruta</h3>
+          <h3>
+            <BusFront size={18} strokeWidth={2} aria-hidden="true" />
+            Seleccionar Ruta
+          </h3>
           <button
             id="btnCerrarModalRutas"
             className="modal-cerrar"
@@ -105,7 +121,7 @@ export function RouteModal({ open, onClose, onSelect }: RouteModalProps) {
             aria-label="Cerrar"
             onClick={close}
           >
-            ✕
+            <X size={18} strokeWidth={2.5} />
           </button>
         </div>
         <div className="modal-buscador">
@@ -139,44 +155,29 @@ export function RouteModal({ open, onClose, onSelect }: RouteModalProps) {
                 key={`${codigo}-${sentido}`}
                 className="ruta-modal-item"
                 role="button"
-                  tabIndex={0}
-                  data-codigo={codigo}
-                  data-sentido={sentido}
-                  onClick={() => selectRoute(route)}
-                  onKeyDown={(event) => handleRouteKeyDown(event, route)}
-                >
-                  <div className="ruta-modal-icono" aria-hidden="true">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.9"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M6 17h12" />
-                      <path d="M7 17v2" />
-                      <path d="M17 17v2" />
-                      <path d="M5 8c0-2 1.2-3 3.2-3h7.6C17.8 5 19 6 19 8v7c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V8Z" />
-                      <path d="M8 9h8" />
-                      <path d="M8 13h.01" />
-                      <path d="M16 13h.01" />
-                    </svg>
-                  </div>
-                  <div className="ruta-modal-info">
-                    <div className="ruta-modal-top">
-                      <span className="ruta-modal-codigo">{codigo}</span>
-                      {sentido && (
-                        <span className="ruta-modal-sentido" data-sentido={sentido}>
-                          {sentido}
-                        </span>
-                      )}
-                    </div>
-                    {nombre && <strong className="ruta-modal-nombre">{nombre}</strong>}
-                    {trayecto && <span className="ruta-modal-trayecto">{trayecto}</span>}
-                    {detalles && <span className="ruta-modal-detalles">{detalles}</span>}
-                  </div>
+                tabIndex={0}
+                data-codigo={codigo}
+                data-sentido={sentido}
+                onClick={() => selectRoute(route)}
+                onKeyDown={(event) => handleRouteKeyDown(event, route)}
+              >
+                <div className="ruta-modal-icono" aria-hidden="true">
+                  <BusFront size={20} strokeWidth={1.8} />
                 </div>
+                <div className="ruta-modal-info">
+                  <div className="ruta-modal-top">
+                    <span className="ruta-modal-codigo">{codigo}</span>
+                    {sentido && (
+                      <span className="ruta-modal-sentido" data-sentido={sentido}>
+                        {sentido}
+                      </span>
+                    )}
+                  </div>
+                  {nombre && <strong className="ruta-modal-nombre">{nombre}</strong>}
+                  {trayecto && <span className="ruta-modal-trayecto">{trayecto}</span>}
+                  {detalles && <span className="ruta-modal-detalles">{detalles}</span>}
+                </div>
+              </div>
               );
             })}
         </div>

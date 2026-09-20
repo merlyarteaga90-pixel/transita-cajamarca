@@ -14,6 +14,10 @@ import { useAbortController } from './hooks/useAbortController';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useSession } from './hooks/useSession';
 
+function displayRouteName(codigo: string): string {
+  return codigo.replace(/^R-(\d{1,2}(?:-\d)?)$/, (_m, n) => `Ruta ${n.replace('-', '-')}`);
+}
+
 export function App() {
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [error, setError] = useState('');
@@ -51,7 +55,7 @@ export function App() {
   }, []);
 
   const handleSubmit = useCallback(
-    async (consulta: string) => {
+    async (consulta: string, contextoOverride?: ConversationContext) => {
       const request = startRequest();
       stopSpeaking();
       setError('');
@@ -67,9 +71,11 @@ export function App() {
             }
           : undefined;
 
+        const ctx = contextoOverride !== undefined ? contextoOverride : conversationContext;
+
         const data = await consultRoute({
           consulta,
-          contexto: conversationContext,
+          contexto: ctx,
           user_location: userLocation,
           session_id: sessionId
         }, request.signal);
@@ -105,8 +111,7 @@ export function App() {
 
   const handleCandidateSelect = useCallback(
     (candidate: string) => {
-      setSearchValue(candidate);
-      void handleSubmit(candidate);
+      void handleSubmit(candidate, {});
     },
     [handleSubmit]
   );
@@ -122,16 +127,16 @@ export function App() {
         const data = await getNextUnit(codigo, request.signal);
         if (finishRequest(request.id ?? -1)) {
           const horario = formatSchedule(data);
-          const proxima = withUnit(data.proxima_unidad?.minutos_restantes, 'min', '~');
-          const parts = [`La ruta ${safeText(codigo, 'seleccionada')}`];
+          const proxima = withUnit(data.proximo_paso_min ?? data.proxima_unidad?.minutos_restantes, 'min', '~');
+          const parts = [`La ${displayRouteName(safeText(codigo, 'seleccionada'))}`];
           if (horario) parts.push(`opera de ${horario}`);
           if (proxima)
             parts.push(`la próxima salida teórica desde el inicio es en aproximadamente ${proxima}`);
-          else if (hasValue(data.proxima_unidad?.nota))
-            parts.push(safeText(data.proxima_unidad?.nota));
+          else if (hasValue(data.mensaje_servicio ?? data.proxima_unidad?.nota))
+            parts.push(safeText(data.mensaje_servicio ?? data.proxima_unidad?.nota));
 
           setResponse({
-            estado: `Ruta ${safeText(codigo)}${hasValue(sentido) ? ` - ${safeText(sentido)}` : ''}`,
+            estado: `${displayRouteName(safeText(codigo))}${hasValue(sentido) ? ` - ${safeText(sentido)}` : ''}`,
             icono: '🚌',
             tipo: 'info',
             respuesta: `${parts.join('. ')}.`,

@@ -1,10 +1,11 @@
-import type { ApiResponse, ApiRoute } from '../api/types';
-import { isSelectorCandidate } from '../api/client';
-import { asRoutes, candidateText, safeText } from '../lib/formatters';
+import { BusFront, Check, ClipboardCopy, MapPin, Square, Volume2 } from 'lucide-react';
+import type { ApiResponse, ApiRoute, SelectorCandidate } from '../api/types';
+import { asRoutes, safeText } from '../lib/formatters';
 import { InfoRouteCard } from './InfoRouteCard';
 import { PlaceRouteCard } from './PlaceRouteCard';
 import { RouteCard } from './RouteCard';
 import { SelectorRouteCard } from './SelectorRouteCard';
+import Markdown from 'react-markdown';
 
 export type ResponsePanelProps = {
   data: ApiResponse;
@@ -15,14 +16,19 @@ export type ResponsePanelProps = {
   onCandidateSelect?: (candidate: string) => void;
 };
 
-function candidateList(candidatos: unknown[]): string[] {
+type CandidateEntry = { label: string; value: string };
+
+function candidateList(candidatos: unknown[]): CandidateEntry[] {
   return candidatos
-    .map((candidate) => {
-      if (typeof candidate === 'string') return candidate;
-      if (isSelectorCandidate(candidate)) return candidate.mostrar;
-      return candidateText(candidate);
+    .map((candidate): CandidateEntry | null => {
+      if (typeof candidate === 'string') return { label: candidate, value: candidate };
+      const c = candidate as SelectorCandidate;
+      if (typeof c.mostrar === 'string' && typeof c.ruta === 'string') {
+        return { label: c.mostrar, value: c.ruta };
+      }
+      return null;
     })
-    .filter(Boolean);
+    .filter((c): c is CandidateEntry => Boolean(c));
 }
 
 export function ResponsePanel({
@@ -41,8 +47,8 @@ export function ResponsePanel({
     <section id="resultado" className="resultado">
       <div className="resultado-header">
         <div className="resultado-titulo">
-          <span id="iconoEstado" className="icono-estado">
-            {safeText(data.icono, '🚌')}
+          <span id="iconoEstado" className="icono-estado" aria-hidden="true">
+            <BusFront size={18} strokeWidth={2} />
           </span>
           <h3 id="estadoTexto">{safeText(data.estado, 'Respuesta del Asistente')}</h3>
         </div>
@@ -51,27 +57,36 @@ export function ResponsePanel({
             id="btnVoz"
             className="btn-tool"
             type="button"
-            title="Escuchar respuesta"
+            title={speaking ? 'Detener' : 'Escuchar respuesta'}
+            aria-label={speaking ? 'Detener voz' : 'Escuchar respuesta'}
             onClick={onSpeak}
           >
-            {speaking ? '⏹️ Detener' : '🔊 Escuchar'}
+            {speaking ? <Square size={14} fill="currentColor" strokeWidth={0} /> : <Volume2 size={14} strokeWidth={2} />}
+            <span>{speaking ? 'Detener' : 'Escuchar'}</span>
           </button>
           <button
             id="btnCopiar"
             className="btn-tool"
             type="button"
             title="Copiar texto"
+            aria-label="Copiar texto"
             onClick={onCopy}
           >
-            {copied ? '✓ ¡Copiado!' : '📋 Copiar'}
+            {copied ? <Check size={14} strokeWidth={2.5} /> : <ClipboardCopy size={14} strokeWidth={2} />}
+            <span>{copied ? '¡Copiado!' : 'Copiar'}</span>
           </button>
         </div>
       </div>
 
       <div id="respuesta" className="respuesta-cuerpo">
         <div className="respuesta-resumen">
-          <span className="respuesta-resumen-icono">🚌</span>
-          <p>{safeText(data.respuesta, 'No se encontraron rutas.')}</p>
+          <Markdown
+            skipHtml
+            allowedElements={['p', 'strong', 'em', 'ul', 'ol', 'li', 'br']}
+            unwrapDisallowed
+          >
+            {safeText(data.respuesta, 'No se encontraron rutas.')}
+          </Markdown>
         </div>
 
         {data.tipo === 'ruta' && (
@@ -121,14 +136,16 @@ function CandidateList({
   candidates,
   onSelect
 }: {
-  candidates: string[];
+  candidates: CandidateEntry[];
   onSelect?: (candidate: string) => void;
 }) {
+  const layout = candidates.length === 1 ? 'one' : candidates.length === 2 ? 'two' : 'many';
+
   if (!onSelect) {
     return (
       <ul className="aclaracion-lista">
         {candidates.map((candidate, index) => (
-          <li key={index}>{candidate}</li>
+          <li key={index}>{candidate.label}</li>
         ))}
       </ul>
     );
@@ -137,16 +154,16 @@ function CandidateList({
   return (
     <div className="candidatos-bloque">
       <span className="seccion-label">Elige una opción</span>
-      <div className="candidatos-grid">
+      <div className="candidatos-grid" data-layout={layout}>
         {candidates.map((candidate, index) => (
           <button
             key={index}
             type="button"
             className="candidato-card"
-            onClick={() => onSelect(candidate)}
+            onClick={() => onSelect(candidate.value)}
           >
-            <span className="candidato-icono">📍</span>
-            <span className="candidato-texto">{candidate}</span>
+            <span className="candidato-icono" aria-hidden="true"><MapPin size={16} strokeWidth={2} /></span>
+            <span className="candidato-texto">{candidate.label}</span>
           </button>
         ))}
       </div>

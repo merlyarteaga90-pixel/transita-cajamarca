@@ -1,8 +1,10 @@
+import { BusFront, Clock, Hourglass, RefreshCw, Watch } from 'lucide-react';
 import type { ApiRoute } from '../api/types';
-import { formatFare, formatSchedule, safeText, withUnit } from '../lib/formatters';
+import { formatSchedule, safeText, withUnit } from '../lib/formatters';
 import { CompanyInfo } from './CompanyInfo';
 import { MetricsGrid } from './MetricsGrid';
 import { RouteHeader } from './RouteHeader';
+import { ServiceStatusBadge } from './ServiceStatusBadge';
 import { TariffGrid } from './TariffGrid';
 
 export type InfoRouteCardProps = {
@@ -12,48 +14,49 @@ export type InfoRouteCardProps = {
 export function InfoRouteCard({ route }: InfoRouteCardProps) {
   const tipo = (route as ApiRoute & { consulta_tipo?: string }).consulta_tipo;
 
-  let metrics: Array<[string, string, string]> = [];
+  let metrics: Array<[React.ReactNode, string, string]> = [];
 
   if (tipo === 'TARIFA') {
-    metrics = [
-      ['🪙', 'Pasaje general', formatFare(route.tarifa_general ?? route.tarifa)],
-      ['🎓', 'Medio pasaje', formatFare(route.tarifa_medio_pasaje)],
-    ];
-    if (route.frecuencia_min) {
-      metrics.push(['🔄', 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')]);
+    return (
+      <article className="ruta-card info-card">
+        <RouteHeader route={route} />
+        <CompanyInfo route={route} />
+        <TariffGrid route={route} />
+      </article>
+    );
+  }
+
+  if (tipo === 'HORARIO') {
+    metrics = [];
+    if (route.horario_inicio || route.horario_fin) {
+      metrics.push([<Clock size={16} strokeWidth={2} aria-hidden="true" />, 'Horario', formatSchedule(route)]);
     }
-  } else if (tipo === 'HORARIO') {
-    metrics = [
-      ['🕐', 'Horario', formatSchedule(route)],
-    ];
     if (route.frecuencia_min) {
-      metrics.push(['🔄', 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')]);
+      metrics.push([<RefreshCw size={16} strokeWidth={2} aria-hidden="true" />, 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')]);
     }
   } else if (tipo === 'FRECUENCIA') {
-    metrics = [
-      ['🔄', 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')],
-    ];
+    metrics = [];
+    if (route.frecuencia_min) {
+      metrics.push([<RefreshCw size={16} strokeWidth={2} aria-hidden="true" />, 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')]);
+    }
     if (route.horario_inicio || route.horario_fin) {
-      metrics.push(['🕐', 'Horario', formatSchedule(route)]);
+      metrics.push([<Clock size={16} strokeWidth={2} aria-hidden="true" />, 'Horario', formatSchedule(route)]);
     }
   } else if (tipo === 'PROXIMA_UNIDAD') {
     metrics = [
-      ['🚌', 'Próxima salida', safeText(route.proxima_salida)],
-      ['⏳', 'Faltan', withUnit(route.proximo_paso_min, 'min', '~')],
-      ['ℹ️', 'Estado', safeText(route.estado_servicio ?? route.mensaje_servicio)],
-      ['⌚', 'Hora actual', safeText(route.hora_actual)],
+      [<BusFront size={16} strokeWidth={2} aria-hidden="true" />, 'Próxima salida', safeText(route.proxima_salida)],
+      [<Hourglass size={16} strokeWidth={2} aria-hidden="true" />, 'Faltan', withUnit(route.proximo_paso_min, 'min', '~')],
     ];
     if (route.frecuencia_min) {
-      metrics.push(['🔄', 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')]);
+      metrics.push([<RefreshCw size={16} strokeWidth={2} aria-hidden="true" />, 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')]);
     }
   } else {
     metrics = [
-      ['🕐', 'Horario', formatSchedule(route)],
-      ['🔄', 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')],
-      ['🚌', 'Salida teórica', safeText(route.proxima_salida)],
-      ['⏳', 'Faltan', withUnit(route.proximo_paso_min, 'min', '~')],
-      ['⌚', 'Hora actual', safeText(route.hora_actual)],
-      ['ℹ️', 'Estado', safeText(route.estado_servicio ?? route.mensaje_servicio)],
+      [<Clock size={16} strokeWidth={2} aria-hidden="true" />, 'Horario', formatSchedule(route)],
+      [<RefreshCw size={16} strokeWidth={2} aria-hidden="true" />, 'Frecuencia', withUnit(route.frecuencia_min, 'min', 'Cada ')],
+      [<BusFront size={16} strokeWidth={2} aria-hidden="true" />, 'Salida teórica', safeText(route.proxima_salida)],
+      [<Hourglass size={16} strokeWidth={2} aria-hidden="true" />, 'Faltan', withUnit(route.proximo_paso_min, 'min', '~')],
+      [<Watch size={16} strokeWidth={2} aria-hidden="true" />, 'Hora actual', safeText(route.hora_actual)],
     ];
   }
 
@@ -62,7 +65,15 @@ export function InfoRouteCard({ route }: InfoRouteCardProps) {
       <RouteHeader route={route} />
       <CompanyInfo route={route} />
       <MetricsGrid metrics={metrics} />
-      {tipo !== 'TARIFA' && <TariffGrid route={route} />}
+      <TariffGrid route={route} />
+      {route.estado_servicio && (
+        <div className="ruta-meta-row">
+          <ServiceStatusBadge
+            estado_servicio={route.estado_servicio}
+            mensaje_servicio={route.mensaje_servicio}
+          />
+        </div>
+      )}
     </article>
   );
 }

@@ -1,3 +1,4 @@
+import { MapPin, X } from 'lucide-react';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { GeolocationStatus } from '../hooks/useGeolocation';
 
@@ -18,12 +19,12 @@ export type SearchBoxProps = {
 };
 
 const LOCATION_LABELS: Record<GeolocationStatus, { text: string; title: string }> = {
-  idle: { text: '📍 Compartir ubicación', title: 'Usar mi ubicación para recomendar rutas cercanas' },
-  requesting: { text: '⏳ Obteniendo ubicación…', title: 'Solicitando permiso de ubicación' },
-  active: { text: '📍 Compartiendo ubicación', title: 'Dejar de compartir ubicación' },
-  denied: { text: '❌ Permiso denegado · Reintentar', title: 'Intentar nuevamente' },
-  unavailable: { text: '❌ No disponible · Reintentar', title: 'Intentar nuevamente' },
-  timeout: { text: '⏱️ Tiempo agotado · Reintentar', title: 'Intentar nuevamente' },
+  idle: { text: 'Compartir ubicación', title: 'Usar mi ubicación para recomendar rutas cercanas' },
+  requesting: { text: 'Obteniendo ubicación…', title: 'Solicitando permiso de ubicación' },
+  active: { text: 'Ubicación compartida', title: 'Dejar de compartir ubicación' },
+  denied: { text: 'Permiso denegado · Reintentar', title: 'Intentar nuevamente' },
+  unavailable: { text: 'No disponible · Reintentar', title: 'Intentar nuevamente' },
+  timeout: { text: 'Tiempo agotado · Reintentar', title: 'Intentar nuevamente' },
 };
 
 export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>(function SearchBox(
@@ -89,9 +90,10 @@ export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>(function Se
           id="btnLimpiar"
           className="btn-limpiar"
           title="Borrar texto"
+          aria-label="Borrar texto"
           onClick={clear}
         >
-          ✕
+          <X size={16} strokeWidth={2.5} />
         </button>
       </div>
 
@@ -111,6 +113,7 @@ export const SearchBox = forwardRef<SearchBoxHandle, SearchBoxProps>(function Se
               disabled={isRequesting}
               aria-pressed={isActive}
             >
+              <MapPin size={14} strokeWidth={2.5} aria-hidden="true" />
               <span>{label.text}</span>
             </button>
           )}
