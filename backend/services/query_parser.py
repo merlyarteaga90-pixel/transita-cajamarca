@@ -15,6 +15,48 @@ def _limpiar_lugar(texto: str | None) -> str | None:
     return texto or None
 
 
+_STOP_LUGAR = (
+    r"(?:pero|y)\s+no\s+s[eé]\s+(?:desde|de|a|ad[oó]nde)\s+d[oó]nde",
+    r"no\s+s[eé]\s+(?:desde|de|a|ad[oó]nde)\s+d[oó]nde",
+    r"no\s+s[eé]\s+(?:desde|de)\s+d[oó]nde",
+    r"no\s+s[eé]\s+a\s+d[oó]nde",
+    r"no\s+s[eé]\s+ad[oó]nde",
+    r"por\s+favor",
+    r"ayuda",
+)
+
+_INTERROGATIVE_CLAUSE = re.compile(
+    r"\s+(?:como (?:llego|voy|llegar|ir|es|esta|me conviene)\b"
+    r"|(?:como se llama|como le dicen)\b"
+    r"|que (?:ruta|combi|bus|horario|info|tiene|son|hay|pasa)\b"
+    r"|cual(?:es)? (?:ruta|combi|bus|es|son|tiene|esta|queda|va|conviene)\b"
+    r"|donde (?:esta|queda|es|hay|me toca)\b"
+    r"|cuanto (?:cuesta|pasa|es|falta)\b"
+    r"|a que hora\b"
+    r"|que tal\b"
+    r"|me puedes decir\b"
+    r"|dime\b"
+    r"|explica(?:me)?\b"
+    r"|deseo (?:saber|ir|llegar)\b"
+    r"|necesito (?:saber |ir |llegar |a donde)\b"
+    r"|quisiera saber\b"
+    r"|cual me (?:lleva|conviene)\b"
+    r"|que tipo de transporte\b"
+    r"|como puedo llegar)\b",
+    re.IGNORECASE,
+)
+
+
+def _recortar_lugar(texto: str | None) -> str | None:
+    """Elimina frases colgantes y cláusulas interrogativas finales."""
+    if not texto:
+        return None
+    for patron in _STOP_LUGAR:
+        texto = re.split(patron, texto, flags=re.IGNORECASE)[0]
+    texto = _INTERROGATIVE_CLAUSE.split(texto)[0]
+    return _limpiar_lugar(texto)
+
+
 def _prep_destino() -> str:
     return r"(?:a|al|a\s+la|a\s+los|a\s+las|hacia|hasta|pa(?:ra)?)"
 
@@ -42,8 +84,49 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
     original = re.sub(r"\s+", " ", mensaje.strip())
     simple = _sin_tildes(original.lower())
 
-    if re.fullmatch(r"(?:hola|buenas|buenos dias|buenas tardes|buenas noches|gracias|chau|adios)[!. ]*", simple):
+    if re.fullmatch(r"(?:hola|buenas|buenos dias|buenas tardes|buenas noches)[!. ]*", simple):
         return {"intencion": "SALUDO", "origen": None, "destino": None, "ruta_codigo": None}
+
+    if re.fullmatch(r"(?:gracias|chau|adios|hasta luego|nos vemos|bye)[!. ]*", simple):
+        return {"intencion": "DESPEDIDA", "origen": None, "destino": None, "ruta_codigo": None}
+
+    info_lugar = re.match(
+        r"^(?:qu[eé]\s+es|qu[eé]\s+hay\s+en|d[oó]nde\s+(?:queda|es)|sobre)\s+(?!la\s+ruta|r\s*-?\s*\d)(.+?)[?.!]*$",
+        original,
+        re.IGNORECASE,
+    )
+    if info_lugar:
+        return {
+            "intencion": "INFO_LUGAR",
+            "origen": None,
+            "destino": _limpiar_lugar(info_lugar.group(1)),
+            "ruta_codigo": None,
+        }
+
+    lugares_cercanos = re.match(
+        r"^(?:qu[eé]\s+hay\s+cerca\s+(?:d[ea]l?)?|cerca\s+de|negocios\s+cerca\s+de|bancos\s+cerca\s+de|restaurantes\s+cerca\s+de|farmacias?\s+cerca\s+de)\s+(.+?)[?.!]*$",
+        original,
+        re.IGNORECASE,
+    )
+    if lugares_cercanos:
+        return {
+            "intencion": "LUGARES_CERCANOS",
+            "origen": None,
+            "destino": _limpiar_lugar(lugares_cercanos.group(1)),
+            "ruta_codigo": None,
+        }
+
+    fuera = re.match(
+        r"^(?:qu[eé]\s+hora\s+es\s+en|clima\s+en|cu[aá]ntos?\s+habitantes|qu[eé]\s+idiomas?\s+se\s+habla|cu[aá]nto\s+falta\s+para\s+navidad)",
+        simple,
+    )
+    if fuera:
+        return {
+            "intencion": "FUERA_DE_ALCANCE",
+            "origen": None,
+            "destino": None,
+            "ruta_codigo": None,
+        }
 
     intenciones_ruta = (
         ("HORARIO", r"\b(?:horario|hora|a que hora)\b"),
@@ -90,8 +173,8 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
         if viaje:
             return {
                 "intencion": "BUSCAR_RUTA",
-                "origen": _limpiar_lugar(viaje.group(1)),
-                "destino": _limpiar_lugar(viaje.group(2)),
+                "origen": _recortar_lugar(viaje.group(1)),
+                "destino": _recortar_lugar(viaje.group(2)),
                 "ruta_codigo": None,
             }
 
@@ -106,7 +189,7 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
             return {
                 "intencion": "BUSCAR_RUTA",
                 "origen": None,
-                "destino": _limpiar_lugar(destino.group(1)),
+                "destino": _recortar_lugar(destino.group(1)),
                 "ruta_codigo": None,
             }
 
@@ -121,7 +204,7 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
     if solo_origen:
         return {
             "intencion": "BUSCAR_RUTA",
-            "origen": _limpiar_lugar(solo_origen.group(1)),
+            "origen": _recortar_lugar(solo_origen.group(1)),
             "destino": None,
             "ruta_codigo": None,
         }
@@ -134,8 +217,8 @@ def interpretar_consulta_clara(mensaje: str) -> dict | None:
             return None
         return {
             "intencion": "BUSCAR_RUTA",
-            "origen": _limpiar_lugar(corto.group(1)),
-            "destino": _limpiar_lugar(corto.group(2)),
+            "origen": _recortar_lugar(corto.group(1)),
+            "destino": _recortar_lugar(corto.group(2)),
             "ruta_codigo": None,
         }
 

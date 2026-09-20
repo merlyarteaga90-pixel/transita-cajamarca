@@ -1,27 +1,33 @@
 # Asistente de Rutas de Cajamarca
 
-Aplicación local con FastAPI, MySQL y frontend web. Ollama es opcional: las consultas frecuentes se interpretan con reglas deterministas y el modelo se usa solo como respaldo para frases no reconocidas.
+Aplicación local con FastAPI, SQLite, frontend React y Gemini API. Las consultas frecuentes se interpretan con reglas deterministas y Gemini se usa para clasificar frases no reconocidas y generar respuestas naturales.
 
-El frontend está construido con Svelte + Vite y se sirve desde FastAPI usando el build generado en `frontend/dist`.
+El frontend está construido con React 18 + Vite y se sirve desde FastAPI usando el build generado en `frontend/dist`.
 
 ## Funciones actuales
 
 - Búsqueda de rutas directas entre dos referencias.
 - Tolerancia a alias, tildes, abreviaturas y errores comunes.
 - Listado de todas las rutas y sentidos que pasan por un lugar.
+- Información descriptiva de lugares turísticos, educativos, religiosos, de salud y comerciales.
+- Establecimientos cercanos (bancos, restaurantes, farmacias) por lugar de referencia.
 - Horarios, frecuencias, tarifas y salida teórica por ruta.
 - Familias de ruta: `ruta 03` devuelve `R-03-1` y `R-03-2`.
-- Cards para recorridos, rutas por lugar e información de rutas.
+- Clasificación de intención vía Gemini (con parser determinista de fallback).
+- Respuestas naturales verificadas generadas por Gemini a partir de datos SQL.
+- Sugerencias ante consultas vagas (deterministas).
+- Manejo de "fuera de alcance" para consultas no relacionadas.
+- Contexto conversacional (4-5 turnos).
 - Lista de candidatos cuando un lugar es ambiguo.
-- Funcionamiento principal aunque Ollama no esté disponible.
+- Funcionamiento principal aunque Gemini no esté configurado.
 
-MySQL es la única fuente de rutas y datos operativos. IDA y VUELTA se procesan como recorridos independientes. Solo se buscan rutas directas; no hay transbordos todavía.
+SQLite es la única fuente de rutas y datos operativos. IDA y VUELTA se procesan como recorridos independientes. Solo se buscan rutas directas; no hay transbordos todavía.
 
 ## Requisitos
 
 - Python 3.12 recomendado.
-- MySQL en `localhost:3306` con la base `asistente_rutas`.
-- Ollama opcional con el modelo `llama3.2:3b`.
+- SQLite (archivo local `transita_cajamarca.db`).
+- Gemini API key (gratuita para desarrollo en Google AI Studio).
 
 ## Configuración
 
@@ -38,43 +44,26 @@ py -3.12 -m venv .venv
 & ".venv\Scripts\python.exe" -m pip install -r requirements.txt
 ```
 
-Copia `.env.example` como `.env` y configura los datos de MySQL. La configuración actual esperada es:
+Copia `.env.example` como `.env` y añade tu clave:
 
 ```dotenv
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=asistente_rutas
-DB_USER=root
-DB_PASSWORD=
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2:3b
-OLLAMA_TIMEOUT=4
+DB_PATH=transita_cajamarca.db
+GEMINI_API_KEY=tu_clave_aqui
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_TIMEOUT_SECONDS=8
 ```
 
 ## Base de datos
 
-Aplicar los esquemas en orden:
-
-1. `database/01_schema.sql`
-2. `database/03_lugares_alias.sql`
-
-Importadores disponibles:
+Inicializar y cargar datos (crea la base si no existe):
 
 ```powershell
-& ".venv\Scripts\python.exe" resources\importar_excel_v4.py
-& ".venv\Scripts\python.exe" resources\importar_diccionario_alias.py
+python -m backend.init_db
+python -m backend.init_db --reset
 ```
 
-Los importadores usan por defecto los archivos versionados en `resources/` (`listado_rutas_cajamarca_2024.xlsx` y `lugares_alias.csv`). Limpian sus tablas antes de insertar: úsalos contra una base de respaldo si tienes datos propios.
-
-## Ollama opcional
-
-```powershell
-ollama pull llama3.2:3b
-ollama serve
-```
-
-Si Ollama está apagado, horarios, tarifas, frecuencias, rutas por lugar y búsquedas con estructuras claras continúan funcionando.
+Carga en orden: `database/00_schema.sql`, `01_seed.sql`, `02_info_lugares.sql`, `03_establecimientos_cercanos.sql`.
+El flag `--reset` elimina el archivo de DB antes de cargar.
 
 ## Iniciar la aplicación
 
@@ -117,7 +106,7 @@ Pruebas automatizadas:
 & ".venv\Scripts\python.exe" -m unittest discover -s tests -v
 ```
 
-Las pruebas de integración requieren MySQL, pero no requieren un servidor HTTP ni Ollama activos.
+Las pruebas no requieren Gemini activo.
 
 ## Interpretación de datos
 

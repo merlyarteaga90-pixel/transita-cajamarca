@@ -5,13 +5,26 @@ from pydantic import BaseModel, Field
 
 Intencion = Literal[
     "SALUDO",
+    "DESPEDIDA",
     "BUSCAR_RUTA",
     "RUTAS_POR_LUGAR",
+    "QUE_RUTA_PASA_CERCA",
+    "INFO_LUGAR",
+    "LUGARES_CERCANOS",
+    "INTENCION_VAGA",
     "PROXIMA_UNIDAD",
     "HORARIO",
     "FRECUENCIA",
     "TARIFA",
+    "FUERA_DE_ALCANCE",
 ]
+
+
+class UserLocation(BaseModel):
+    lat: float
+    lon: float
+    accuracy_m: float | None = None
+    captured_at: str | None = None
 
 
 class ConsultaRequest(BaseModel):
@@ -21,6 +34,8 @@ class ConsultaRequest(BaseModel):
     intencion: Intencion | None = None
     ruta_codigo: str | int | None = None
     contexto: dict[str, Any] | None = None
+    user_location: UserLocation | None = None
+    session_id: str | None = None
 
 
 class ProximaUnidadRequest(BaseModel):
@@ -35,10 +50,13 @@ class RespuestaAPI(BaseModel):
         "alternativas",
         "rutas_por_lugar",
         "info",
+        "info_lugar",
+        "lugares_cercanos",
         "selector_ruta",
         "aclaracion",
         "sin_resultados",
         "saludo",
+        "despedida",
         "error",
     ]
     resultados: list[dict[str, Any]] = Field(default_factory=list)
@@ -47,6 +65,7 @@ class RespuestaAPI(BaseModel):
     rutas: list[dict[str, Any]] = Field(default_factory=list)
     intencion_solicitada: str | None = None
     contexto: dict[str, Any] = Field(default_factory=dict)
+    session_id: str | None = None
 
 
 class ProximaUnidadResponse(BaseModel):
