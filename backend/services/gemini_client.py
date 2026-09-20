@@ -90,12 +90,21 @@ def generate_natural_response(evidencia: dict, temperatura: float = 0.2) -> str 
         return None
 
     prompt = (
-        "Eres un asistente de transporte público de Cajamarca, Perú. "
-        "Responde ÚNICAMENTE con la información proporcionada en la evidencia. "
-        "No inventes rutas, paraderos, tiempos ni tarifas. "
-        "Usa lenguaje natural y claro. Menciona 'Ruta X' en lugar de 'R-X'.\n\n"
+        "Eres un asistente de transporte público de Cajamarca, Perú.\n"
+        "Tu tarea es DAR UNA RECOMENDACIÓN ÚTIL y una breve introducción a las tarjetas de información que se muestran debajo.\n"
+        "NO repitas en el texto los datos que ya aparecen en las tarjetas "
+        "(horarios, tarifas, frecuencia, distancia, empresa).\n"
+        "Usa Markdown sencillo: **negrita**, _cursiva_, listas con -.\n"
+        "Máximo 2 párrafos cortos.\n\n"
+        "Reglas:\n"
+        "- Si falta el origen pero hay rutas hacia el destino: di cuáles y warns que缺少 origen.\n"
+        "- Si no hay ruta directa: dilo claramente; no affirmes que una ruta sirve sin confirmarlo.\n"
+        "- Si hay varias rutas sin criterio para elegir: no inventes cuál es mejor.\n"
+        "- Si el usuario pregunto por un lugar específico (rutas por lugar), enfócate en eso.\n"
+        "- Escribe 'Ruta 19' (no 'R-19') solo en texto plano.\n"
+        "- En las tarjetas ya se mostrará 'R-19' con su código técnico; en prosa usa 'Ruta 19'.\n\n"
         "Evidencia:\n" + json.dumps(evidencia, ensure_ascii=False, indent=2) + "\n\n"
-        "Responde en español de forma concisa y útil."
+        "Responde solo con la recomendación y la introducción. Sé conciso."
     )
 
     try:

@@ -18,6 +18,8 @@ def generar_respuesta_natural(
     consulta: str,
     resultados: list[dict],
     contexto: dict | None = None,
+    tipo_respuesta: str | None = None,
+    estado: str | None = None,
 ) -> str | None:
     """Genera un resumen natural; devuelve None si Gemini no está disponible."""
     if not resultados or not is_configured():
@@ -27,6 +29,8 @@ def generar_respuesta_natural(
         "consulta": consulta,
         "resultados": resultados[:5],
         "contexto": contexto or {},
+        "tipo_respuesta": tipo_respuesta,
+        "estado": estado,
     }
 
     try:

@@ -25,13 +25,35 @@ _STOP_LUGAR = (
     r"ayuda",
 )
 
+_INTERROGATIVE_CLAUSE = re.compile(
+    r"\s+(?:como (?:llego|voy|llegar|ir|es|esta|me conviene)\b"
+    r"|(?:como se llama|como le dicen)\b"
+    r"|que (?:ruta|combi|bus|horario|info|tiene|son|hay|pasa)\b"
+    r"|cual(?:es)? (?:ruta|combi|bus|es|son|tiene|esta|queda|va|conviene)\b"
+    r"|donde (?:esta|queda|es|hay|me toca)\b"
+    r"|cuanto (?:cuesta|pasa|es|falta)\b"
+    r"|a que hora\b"
+    r"|que tal\b"
+    r"|me puedes decir\b"
+    r"|dime\b"
+    r"|explica(?:me)?\b"
+    r"|deseo (?:saber|ir|llegar)\b"
+    r"|necesito (?:saber |ir |llegar |a donde)\b"
+    r"|quisiera saber\b"
+    r"|cual me (?:lleva|conviene)\b"
+    r"|que tipo de transporte\b"
+    r"|como puedo llegar)\b",
+    re.IGNORECASE,
+)
+
 
 def _recortar_lugar(texto: str | None) -> str | None:
-    """Elimina frases colgantes como 'pero no sé desde dónde'."""
+    """Elimina frases colgantes y cláusulas interrogativas finales."""
     if not texto:
         return None
     for patron in _STOP_LUGAR:
         texto = re.split(patron, texto, flags=re.IGNORECASE)[0]
+    texto = _INTERROGATIVE_CLAUSE.split(texto)[0]
     return _limpiar_lugar(texto)
 
 

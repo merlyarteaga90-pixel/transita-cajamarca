@@ -30,6 +30,22 @@ from backend.services.handlers import (
 
 logger = logging.getLogger(__name__)
 
+# Normaliza códigos técnicos de ruta a formato legible para prose.
+# R-19    → Ruta 19
+# R-03    → Ruta 3
+# R-03-1  → Ruta 3-1
+_RE_CODE = re.compile(r'\bR-(\d{1,2}(?:-\d)?)\b')
+
+def _normalizar_ruta_en_texto(text: str) -> str:
+    """Reemplaza R-XX por 'Ruta X' en texto plano. Solo afecta a prose."""
+    def _repl(m: re.Match) -> str:
+        num = m.group(1)
+        if '-' in num:
+            a, b = num.split('-', 1)
+            return f'Ruta {a}-{b}'
+        return f'Ruta {int(num)}'
+    return _RE_CODE.sub(_repl, text)
+
 
 _PATRONES_LUGAR = [
     r"^(?:qu[eé]\s+es\s+|qu[eé]\s+hay\s+en\s+|d[oó]nde\s+(?:queda|es)\s+|informaci[oó]n\s+de\s+|sobre\s+)(.+?)[?.!]*$",
@@ -178,9 +194,14 @@ def consultar(db, request) -> dict:
             consulta=consulta,
             resultados=respuesta["resultados"],
             contexto=respuesta.get("contexto") or contexto,
+            tipo_respuesta=respuesta.get("tipo"),
+            estado=respuesta.get("estado"),
         )
         if prosa:
             respuesta["respuesta"] = prosa
+
+    if respuesta.get("respuesta"):
+        respuesta["respuesta"] = _normalizar_ruta_en_texto(respuesta["respuesta"])
 
     respuesta["session_id"] = session_id
     respuesta["intencion_solicitada"] = params["_intencion"]

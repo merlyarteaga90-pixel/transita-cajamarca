@@ -316,6 +316,22 @@ class ApiIntegrationTests(unittest.TestCase):
         datos = self.consultar_sin_gemini("buenas").json()
         self.assertEqual(datos["tipo"], "saludo")
 
+    def test_prose_uses_ruta_x_not_r_xx(self):
+        datos = self.consultar_sin_gemini("Horario de la ruta 03").json()
+        self.assertEqual(datos["tipo"], "info")
+        respuesta = datos["respuesta"]
+        for tecnico in ["R-03-1", "R-03-2"]:
+            self.assertNotIn(tecnico, respuesta, f"Prose no debe contener '{tecnico}'")
+        self.assertIn("Ruta 03-1", respuesta)
+        self.assertIn("Ruta 03-2", respuesta)
+
+    def test_prose_ruta_family_single_response(self):
+        datos = self.consultar_sin_gemini("Ruta 03").json()
+        self.assertEqual(datos["tipo"], "info")
+        respuesta = datos["respuesta"]
+        self.assertNotIn("R-03", respuesta)
+        self.assertIn("Ruta 03", respuesta)
+
 
 if __name__ == "__main__":
     unittest.main()

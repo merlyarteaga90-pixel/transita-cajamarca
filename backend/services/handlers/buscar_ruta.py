@@ -65,6 +65,7 @@ def _respuesta_ambigua(referencia: str, rol: str, resolucion: dict) -> dict:
         "aclaracion",
         f"'{referencia}' puede referirse a varios lugares. Elegí una opción o escribí el nombre completo.",
         candidatos=candidatos,
+        contexto={"intencion": "BUSCAR_RUTA", "pendiente": rol},
     )
 
 
@@ -110,14 +111,14 @@ def handle_buscar_ruta(db, params: dict) -> dict:
                 "Si me dices desde dónde partes, puedo buscar una ruta directa.",
                 resultados=alternativas,
                 candidatos=candidatos,
-                contexto=_contexto_busqueda(destino=nombre, pendiente="origen"),
+                contexto=_contexto_busqueda(destino=nombre, pendiente="origen" if not candidatos else "destino"),
             )
         return respuesta(
             "Falta el origen",
             "aclaracion",
             f"Entiendo que quieres ir a {nombre}. ¿Desde dónde partes?",
             candidatos=candidatos,
-            contexto=_contexto_busqueda(destino=nombre, pendiente="origen"),
+            contexto=_contexto_busqueda(destino=nombre, pendiente="origen" if not candidatos else "destino"),
         )
 
     if not destino:
